@@ -28,8 +28,8 @@ export default defineField({
     STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.opportunity.universalIdentifier,
   type: FieldType.SELECT,
   name: 'need',
-  label: "Besoin",
-  description: "Besoin exprimé dans la demande",
+  label: 'Besoin',
+  description: 'Besoin exprimé dans la demande',
   icon: 'IconBulb',
   isNullable: true,
   options: [

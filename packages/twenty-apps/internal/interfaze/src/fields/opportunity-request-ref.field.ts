@@ -12,8 +12,8 @@ export default defineField({
     STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.opportunity.universalIdentifier,
   type: FieldType.TEXT,
   name: 'requestRef',
-  label: "Réf. demande",
-  description: "Référence de la demande sur le site (IFZ-…)",
+  label: 'Réf. demande',
+  description: 'Référence de la demande sur le site (IFZ-…)',
   icon: 'IconHash',
   isNullable: true,
 });

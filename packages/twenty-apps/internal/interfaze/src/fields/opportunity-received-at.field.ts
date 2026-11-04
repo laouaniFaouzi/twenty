@@ -12,8 +12,8 @@ export default defineField({
     STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.opportunity.universalIdentifier,
   type: FieldType.DATE_TIME,
   name: 'receivedAt',
-  label: "Reçue le",
-  description: "Date de réception de la demande",
+  label: 'Reçue le',
+  description: 'Date de réception de la demande',
   icon: 'IconCalendarEvent',
   isNullable: true,
 });

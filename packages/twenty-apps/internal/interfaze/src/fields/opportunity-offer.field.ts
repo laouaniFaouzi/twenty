@@ -26,7 +26,7 @@ export default defineField({
     STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.opportunity.universalIdentifier,
   type: FieldType.SELECT,
   name: 'offer',
-  label: "Offre",
+  label: 'Offre',
   description: "Offre Interfaze retenue pour l'opportunité",
   icon: 'IconPackage',
   isNullable: true,

@@ -2,6 +2,9 @@ import { STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';
 import { describe, expect, it } from 'vitest';
 
 import defaultRole from 'src/default-role';
+import { PROJECT_UNIVERSAL_IDENTIFIER } from 'src/objects/project.object';
+import { PROJECT_PHASE_UNIVERSAL_IDENTIFIER } from 'src/objects/project-phase.object';
+import { PROJECT_TASK_UNIVERSAL_IDENTIFIER } from 'src/objects/project-task.object';
 
 const permissionFor = (objectUniversalIdentifier: string) =>
   defaultRole.config?.objectPermissions?.find(
@@ -20,12 +23,15 @@ describe('default role', () => {
     });
   });
 
-  it('grants read and update on the standard objects the automations touch, never delete', () => {
+  it('grants read and update on the objects the automations touch, never delete', () => {
     for (const objectUniversalIdentifier of [
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.opportunity.universalIdentifier,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.company.universalIdentifier,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.task.universalIdentifier,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.taskTarget.universalIdentifier,
+      PROJECT_UNIVERSAL_IDENTIFIER,
+      PROJECT_PHASE_UNIVERSAL_IDENTIFIER,
+      PROJECT_TASK_UNIVERSAL_IDENTIFIER,
     ]) {
       expect(permissionFor(objectUniversalIdentifier)).toMatchObject({
         canReadObjectRecords: true,

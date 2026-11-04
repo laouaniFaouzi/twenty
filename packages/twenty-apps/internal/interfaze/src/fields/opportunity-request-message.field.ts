@@ -12,8 +12,8 @@ export default defineField({
     STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.opportunity.universalIdentifier,
   type: FieldType.TEXT,
   name: 'requestMessage',
-  label: "Message",
-  description: "Message laissé dans le formulaire du site",
+  label: 'Message',
+  description: 'Message laissé dans le formulaire du site',
   icon: 'IconMessage',
   isNullable: true,
 });

@@ -15,9 +15,9 @@ export const TIMING_OPTIONS: {
   position: number;
   color: 'gray' | 'blue' | 'green' | 'red' | 'orange' | 'purple' | 'yellow' | 'turquoise' | 'sky' | 'pink';
 }[] = [
-  { id: 'a858009d-3188-465a-8e91-76a54db17937', value: 'ASAP', label: "Dès que possible", position: 0, color: 'red' as const },
-  { id: '26f4290c-612c-4dc0-b12d-a493e22c7497', value: 'ONE_TO_THREE_MONTHS', label: "1 à 3 mois", position: 1, color: 'orange' as const },
-  { id: '9e677633-e871-472f-9721-86f8d2dffa5e', value: 'NO_DATE', label: "Pas de date", position: 2, color: 'gray' as const },
+  { id: 'a858009d-3188-465a-8e91-76a54db17937', value: 'ASAP', label: 'Dès que possible', position: 0, color: 'red' as const },
+  { id: '26f4290c-612c-4dc0-b12d-a493e22c7497', value: 'ONE_TO_THREE_MONTHS', label: '1 à 3 mois', position: 1, color: 'orange' as const },
+  { id: '9e677633-e871-472f-9721-86f8d2dffa5e', value: 'NO_DATE', label: 'Pas de date', position: 2, color: 'gray' as const },
 ];
 
 export default defineField({
@@ -26,8 +26,8 @@ export default defineField({
     STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.opportunity.universalIdentifier,
   type: FieldType.SELECT,
   name: 'timing',
-  label: "Délai",
-  description: "Délai souhaité par le client",
+  label: 'Délai',
+  description: 'Délai souhaité par le client',
   icon: 'IconCalendarTime',
   isNullable: true,
   options: TIMING_OPTIONS,

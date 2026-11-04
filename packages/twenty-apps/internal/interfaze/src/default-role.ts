@@ -4,6 +4,9 @@ import {
 } from 'twenty-sdk/define';
 
 import { DEFAULT_ROLE_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
+import { PROJECT_UNIVERSAL_IDENTIFIER } from 'src/objects/project.object';
+import { PROJECT_PHASE_UNIVERSAL_IDENTIFIER } from 'src/objects/project-phase.object';
+import { PROJECT_TASK_UNIVERSAL_IDENTIFIER } from 'src/objects/project-task.object';
 
 const READ_AND_UPDATE = {
   canReadObjectRecords: true,
@@ -31,6 +34,9 @@ export default defineApplicationRole({
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.company.universalIdentifier,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.task.universalIdentifier,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.taskTarget.universalIdentifier,
+      PROJECT_UNIVERSAL_IDENTIFIER,
+      PROJECT_PHASE_UNIVERSAL_IDENTIFIER,
+      PROJECT_TASK_UNIVERSAL_IDENTIFIER,
     ].map((objectUniversalIdentifier) => ({
       objectUniversalIdentifier,
       ...READ_AND_UPDATE,
