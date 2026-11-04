@@ -10,7 +10,13 @@ const handler = async (event: DatabaseEventPayload): Promise<void> => {
   await handleProjectEvent(toRecordApiClient(new CoreApiClient()), {
     name: event.name,
     recordId: event.recordId,
-    properties: { updatedFields: event.properties.updatedFields },
+    properties: {
+      // Only update events carry updatedFields.
+      updatedFields:
+        'updatedFields' in event.properties
+          ? event.properties.updatedFields
+          : undefined,
+    },
   });
 };
 

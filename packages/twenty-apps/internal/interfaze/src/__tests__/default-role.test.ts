@@ -31,7 +31,6 @@ describe('default role', () => {
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.taskTarget.universalIdentifier,
       PROJECT_UNIVERSAL_IDENTIFIER,
       PROJECT_PHASE_UNIVERSAL_IDENTIFIER,
-      PROJECT_TASK_UNIVERSAL_IDENTIFIER,
     ]) {
       expect(permissionFor(objectUniversalIdentifier)).toMatchObject({
         canReadObjectRecords: true,
@@ -40,6 +39,15 @@ describe('default role', () => {
         canDestroyObjectRecords: false,
       });
     }
+  });
+
+  it('can move tracker tasks to the trash with their phase, never destroy them', () => {
+    expect(permissionFor(PROJECT_TASK_UNIVERSAL_IDENTIFIER)).toMatchObject({
+      canReadObjectRecords: true,
+      canUpdateObjectRecords: true,
+      canSoftDeleteObjectRecords: true,
+      canDestroyObjectRecords: false,
+    });
   });
 
   it('only reads workspace members', () => {

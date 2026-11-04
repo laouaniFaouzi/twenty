@@ -7,7 +7,10 @@ import {
   mutationArgs,
   mutationNames,
 } from 'src/__tests__/utils/create-mock-record-api-client';
-import { handleOpportunityUpdate } from 'src/utils/handle-opportunity-update';
+import {
+  handleOpportunityCreation,
+  handleOpportunityUpdate,
+} from 'src/utils/handle-opportunity-update';
 
 const OPPORTUNITY_ID = 'opportunity-1';
 const NOW = new Date('2026-11-04T10:00:00.000Z');
@@ -74,6 +77,7 @@ describe('handleOpportunityUpdate', () => {
     expect(mutationArgs(client, 'createProject')).toEqual([
       {
         data: {
+          id: OPPORTUNITY_ID,
           name: 'Boulangerie Martin · WebFaze',
           offer: 'WEB',
           status: 'IN_PROGRESS',
@@ -172,6 +176,78 @@ describe('handleOpportunityUpdate', () => {
 
     await handleOpportunityUpdate(client, wonFrom('WON'), NOW);
 
+    expect(client.mutation).not.toHaveBeenCalled();
+  });
+
+  it('ignores the duplicate when a concurrent signature already created the project', async () => {
+    let projectQueries = 0;
+    client.query.mockImplementation(async (request) => {
+      if ('opportunity' in request) {
+        return { opportunity: OPPORTUNITY, projects: connection([]) };
+      }
+      projectQueries += 1;
+
+      return { projects: connection([{ id: OPPORTUNITY_ID }]) };
+    });
+    client.mutation.mockImplementation(async (request) => {
+      if ('createProject' in request) {
+        throw new Error('duplicate key value violates unique constraint');
+      }
+
+      return {};
+    });
+
+    await expect(
+      handleOpportunityUpdate(client, wonFrom('QUOTE_SENT'), NOW),
+    ).resolves.toBeUndefined();
+    expect(projectQueries).toBe(1);
+  });
+
+  it('rethrows a project creation failure when no project exists', async () => {
+    client.query.mockImplementation(async (request) =>
+      'opportunity' in request
+        ? { opportunity: OPPORTUNITY, projects: connection([]) }
+        : { projects: connection([]) },
+    );
+    client.mutation.mockImplementation(async (request) => {
+      if ('createProject' in request) {
+        throw new Error('server unavailable');
+      }
+
+      return {};
+    });
+
+    await expect(
+      handleOpportunityUpdate(client, wonFrom('QUOTE_SENT'), NOW),
+    ).rejects.toThrow('server unavailable');
+  });
+});
+
+describe('handleOpportunityCreation', () => {
+  it('signs an opportunity created directly in the won column', async () => {
+    givenOpportunity();
+
+    await handleOpportunityCreation(
+      client,
+      { recordId: OPPORTUNITY_ID, properties: { after: { interfazeStage: 'WON' } } },
+      NOW,
+    );
+
+    expect(mutationNames(client)).toEqual([
+      'updateOpportunity',
+      'updateCompany',
+      'createProject',
+    ]);
+  });
+
+  it('ignores an opportunity created in any other stage', async () => {
+    await handleOpportunityCreation(
+      client,
+      { recordId: OPPORTUNITY_ID, properties: { after: { interfazeStage: 'NEW_REQUEST' } } },
+      NOW,
+    );
+
+    expect(client.query).not.toHaveBeenCalled();
     expect(client.mutation).not.toHaveBeenCalled();
   });
 });

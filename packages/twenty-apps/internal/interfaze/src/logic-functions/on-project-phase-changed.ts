@@ -12,6 +12,7 @@ import { toRecordApiClient } from 'src/utils/record-api-client';
 const handler = async (event: DatabaseEventPayload): Promise<void> => {
   await handleProjectPhaseEvent(toRecordApiClient(new CoreApiClient()), {
     name: event.name,
+    recordId: event.recordId,
     properties: event.properties as ProjectPhaseEvent['properties'],
   });
 };

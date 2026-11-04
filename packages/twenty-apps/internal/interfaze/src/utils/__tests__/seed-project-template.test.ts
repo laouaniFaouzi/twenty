@@ -77,9 +77,9 @@ describe('seedProjectTemplate', () => {
     ]);
     expect(mutationArgs(client, 'createProjectTasks')[2]).toEqual({
       data: [
-        { name: 'Pages développées', position: 0, status: 'TODO', phaseId: 'phase-3', projectId: PROJECT_ID },
-        { name: 'Textes et images intégrés', position: 1, status: 'TODO', phaseId: 'phase-3', projectId: PROJECT_ID },
-        { name: 'Référencement Google configuré', position: 2, status: 'TODO', phaseId: 'phase-3', projectId: PROJECT_ID },
+        { name: 'Pages développées', position: 4, status: 'TODO', phaseId: 'phase-3', projectId: PROJECT_ID },
+        { name: 'Textes et images intégrés', position: 5, status: 'TODO', phaseId: 'phase-3', projectId: PROJECT_ID },
+        { name: 'Référencement Google configuré', position: 6, status: 'TODO', phaseId: 'phase-3', projectId: PROJECT_ID },
       ],
     });
     expect(
@@ -87,6 +87,18 @@ describe('seedProjectTemplate', () => {
         (args) => args.data as unknown[],
       ),
     ).toHaveLength(10);
+  });
+
+  it('numbers tasks across the whole project so the Suivi tab keeps the phase order', async () => {
+    givenProject({ offer: 'WEB', status: 'IN_PROGRESS' });
+
+    await seedProjectTemplate(client, PROJECT_ID);
+
+    const positions = mutationArgs(client, 'createProjectTasks').flatMap((args) =>
+      (args.data as { position: number }[]).map((task) => task.position),
+    );
+
+    expect(positions).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
   });
 
   it('leaves a project that already has a phase untouched', async () => {

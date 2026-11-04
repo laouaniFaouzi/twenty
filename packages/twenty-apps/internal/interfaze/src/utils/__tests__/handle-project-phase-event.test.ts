@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createMockRecordApiClient,
   type MockRecordApiClient,
+  mutationArgs,
+  mutationNames,
 } from 'src/__tests__/utils/create-mock-record-api-client';
 import onProjectPhaseChanged from 'src/logic-functions/on-project-phase-changed';
 import { handleProjectPhaseEvent } from 'src/utils/handle-project-phase-event';
@@ -36,7 +38,7 @@ describe('handleProjectPhaseEvent', () => {
     ['projectPhase.destroyed', { before: { projectId: 'project-a' } }],
     ['projectPhase.restored', { after: { projectId: 'project-a' } }],
   ])('recomputes the project on %s', async (name, properties) => {
-    await handleProjectPhaseEvent(client, { name, properties });
+    await handleProjectPhaseEvent(client, { name, recordId: 'phase-1', properties });
 
     expect(recomputed).toEqual(['project-a']);
   });
@@ -46,6 +48,7 @@ describe('handleProjectPhaseEvent', () => {
     async (field) => {
       await handleProjectPhaseEvent(client, {
         name: 'projectPhase.updated',
+        recordId: 'phase-1',
         properties: {
           before: { projectId: 'project-a' },
           after: { projectId: 'project-a' },
@@ -60,6 +63,7 @@ describe('handleProjectPhaseEvent', () => {
   it('recomputes both projects when a phase moves to another project', async () => {
     await handleProjectPhaseEvent(client, {
       name: 'projectPhase.updated',
+      recordId: 'phase-1',
       properties: {
         before: { projectId: 'project-a' },
         after: { projectId: 'project-b' },
@@ -70,9 +74,35 @@ describe('handleProjectPhaseEvent', () => {
     expect(recomputed).toEqual(['project-a', 'project-b']);
   });
 
+  it('moves the tasks of a deleted phase to the trash with it', async () => {
+    await handleProjectPhaseEvent(client, {
+      name: 'projectPhase.deleted',
+      recordId: 'phase-1',
+      properties: { before: { projectId: 'project-a' } },
+    });
+
+    expect(mutationNames(client)).toEqual(['deleteProjectTasks']);
+    expect(mutationArgs(client, 'deleteProjectTasks')).toEqual([
+      { filter: { phaseId: { eq: 'phase-1' } } },
+    ]);
+  });
+
+  it('restores the tasks of a restored phase', async () => {
+    await handleProjectPhaseEvent(client, {
+      name: 'projectPhase.restored',
+      recordId: 'phase-1',
+      properties: { after: { projectId: 'project-a' } },
+    });
+
+    expect(mutationArgs(client, 'restoreProjectTasks')).toEqual([
+      { filter: { phaseId: { eq: 'phase-1' } } },
+    ]);
+  });
+
   it('ignores other updates and phases without project', async () => {
     await handleProjectPhaseEvent(client, {
       name: 'projectPhase.updated',
+      recordId: 'phase-1',
       properties: {
         before: { projectId: 'project-a' },
         after: { projectId: 'project-a' },
@@ -81,6 +111,7 @@ describe('handleProjectPhaseEvent', () => {
     });
     await handleProjectPhaseEvent(client, {
       name: 'projectPhase.created',
+      recordId: 'phase-1',
       properties: { after: { projectId: null } },
     });
 

@@ -4,9 +4,15 @@ import { type InterfazeStage } from 'src/fields/opportunity-interfaze-stage.fiel
 import {
   buildProjectFromOpportunity,
   type Currency,
+  type OpportunityForProject,
 } from 'src/utils/build-project-from-opportunity';
 import { createInternalTask } from 'src/utils/create-internal-task';
 import { getEdgeNodes, type RecordApiClient } from 'src/utils/record-api-client';
+
+export type OpportunityCreationEvent = {
+  recordId: string;
+  properties: { after: { interfazeStage?: InterfazeStage | null } };
+};
 
 export type OpportunityUpdateEvent = {
   recordId: string;
@@ -25,6 +31,42 @@ type OpportunityForSignature = {
   ownerId: string | null;
   amount: Currency | null;
   company: { id: string; name: string; clientStatus: ClientStatus | null } | null;
+};
+
+const projectExistsFor = async (
+  client: RecordApiClient,
+  opportunityId: string,
+): Promise<boolean> =>
+  getEdgeNodes(
+    await client.query({
+      projects: {
+        __args: { filter: { opportunityId: { eq: opportunityId } }, first: 1 },
+        edges: { node: { id: true } },
+      },
+    }),
+    'projects',
+  ).length > 0;
+
+const createProjectOnce = async (
+  client: RecordApiClient,
+  opportunity: OpportunityForProject,
+): Promise<void> => {
+  try {
+    await client.mutation({
+      createProject: {
+        __args: {
+          // Reusing the opportunity id makes two signature events handled in
+          // parallel collide on the primary key instead of creating two projects.
+          data: { id: opportunity.id, ...buildProjectFromOpportunity(opportunity) },
+        },
+        id: true,
+      },
+    });
+  } catch (error) {
+    if (!(await projectExistsFor(client, opportunity.id))) {
+      throw error;
+    }
+  }
 };
 
 export const handleOpportunityUpdate = async (
@@ -93,14 +135,7 @@ export const handleOpportunityUpdate = async (
   }
 
   if (opportunity.offer) {
-    await client.mutation({
-      createProject: {
-        __args: {
-          data: buildProjectFromOpportunity({ ...opportunity, offer: opportunity.offer }),
-        },
-        id: true,
-      },
-    });
+    await createProjectOnce(client, { ...opportunity, offer: opportunity.offer });
 
     return;
   }
@@ -113,4 +148,24 @@ export const handleOpportunityUpdate = async (
       target: { objectName: 'opportunity', recordId: opportunity.id },
     });
   }
+};
+
+export const handleOpportunityCreation = async (
+  client: RecordApiClient,
+  { recordId, properties }: OpportunityCreationEvent,
+  now: Date,
+): Promise<void> => {
+  // An opportunity created straight in the won column is a signature too.
+  if (properties.after.interfazeStage !== 'WON') {
+    return;
+  }
+
+  await handleOpportunityUpdate(
+    client,
+    {
+      recordId,
+      properties: { before: { interfazeStage: null }, updatedFields: ['interfazeStage'] },
+    },
+    now,
+  );
 };

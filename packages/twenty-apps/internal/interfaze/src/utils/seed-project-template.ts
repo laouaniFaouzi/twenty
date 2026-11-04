@@ -53,6 +53,10 @@ export const seedProjectTemplate = async (
 
   const phaseTemplates = TRACKER_TEMPLATES[project.offer as Offer];
 
+  // The Suivi tab lists every task of the project ordered by position, so the
+  // numbering runs across phases instead of restarting in each one.
+  let taskPosition = 0;
+
   for (const [phasePosition, phaseTemplate] of phaseTemplates.entries()) {
     const created = await client.mutation({
       createProjectPhase: {
@@ -68,9 +72,9 @@ export const seedProjectTemplate = async (
     await client.mutation({
       createProjectTasks: {
         __args: {
-          data: phaseTemplate.tasks.map((name, position) => ({
+          data: phaseTemplate.tasks.map((name) => ({
             name,
-            position,
+            position: taskPosition++,
             status: 'TODO',
             phaseId,
             projectId,

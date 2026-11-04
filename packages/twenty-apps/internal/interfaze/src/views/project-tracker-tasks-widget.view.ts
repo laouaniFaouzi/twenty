@@ -12,7 +12,7 @@ import {
 export const PROJECT_TRACKER_TASKS_WIDGET_VIEW_UNIVERSAL_IDENTIFIER = '8a7ff400-5fbc-4086-9b09-4461a0e54259';
 
 // TABLE_WIDGET keeps this view out of the record index view pickers. Rows
-// follow the system position field, which the template seeding fills in order.
+// follow the system position field, numbered across phases by the seeding.
 export default defineView({
   universalIdentifier: PROJECT_TRACKER_TASKS_WIDGET_VIEW_UNIVERSAL_IDENTIFIER,
   name: 'Suivi du projet',

@@ -60,6 +60,23 @@ describe('recomputeProjectProgress', () => {
     ]);
   });
 
+  it('ignores the tasks of a phase that was deleted', async () => {
+    client.query.mockResolvedValueOnce({
+      project: { id: PROJECT_ID, progress: 0, currentPhase: 'On échange' },
+      projectPhases: connection([{ id: 'phase-1', name: 'On échange', position: 0 }]),
+      projectTasks: connection([
+        { phaseId: 'phase-1', status: 'DONE' },
+        { phaseId: 'deleted-phase', status: 'TODO' },
+      ]),
+    });
+
+    await recomputeProjectProgress(client, PROJECT_ID);
+
+    expect(mutationArgs(client, 'updateProject')).toEqual([
+      { id: PROJECT_ID, data: { progress: 100, currentPhase: 'Terminé' } },
+    ]);
+  });
+
   it('does not write when nothing changed', async () => {
     givenProject({ progress: 50, currentPhase: 'Vous validez le design' });
 

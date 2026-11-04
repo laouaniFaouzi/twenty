@@ -36,11 +36,15 @@ export default defineApplicationRole({
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.taskTarget.universalIdentifier,
       PROJECT_UNIVERSAL_IDENTIFIER,
       PROJECT_PHASE_UNIVERSAL_IDENTIFIER,
-      PROJECT_TASK_UNIVERSAL_IDENTIFIER,
     ].map((objectUniversalIdentifier) => ({
       objectUniversalIdentifier,
       ...READ_AND_UPDATE,
     })),
+    {
+      objectUniversalIdentifier: PROJECT_TASK_UNIVERSAL_IDENTIFIER,
+      ...READ_AND_UPDATE,
+      canSoftDeleteObjectRecords: true,
+    },
     {
       objectUniversalIdentifier:
         STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.workspaceMember

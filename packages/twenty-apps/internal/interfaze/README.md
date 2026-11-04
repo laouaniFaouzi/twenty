@@ -9,4 +9,5 @@ Chaque lot a son plan dans `docs/superpowers/plans/`.
 | --- | --- |
 | `yarn test:unit` | Tests unitaires |
 | `yarn twenty build` | Valide le manifeste et lance la vérification TypeScript, sans serveur |
+| `yarn typecheck` | Vérification TypeScript de tout `src` (celle de `yarn twenty build` ne couvre pas les sources) |
 | `yarn lint` | Vérification du code |

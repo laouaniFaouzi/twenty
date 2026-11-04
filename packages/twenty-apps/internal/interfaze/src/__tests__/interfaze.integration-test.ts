@@ -140,6 +140,7 @@ describe('Interfaze lot 1', () => {
     });
 
     expect(project.name).toBe(`${COMPANY_NAME} · WebFaze`);
+    expect(project.id).toBe(opportunityId);
 
     const seeded = await waitFor(async () => {
       const state = await projectState(project.id);
@@ -197,5 +198,72 @@ describe('Interfaze lot 1', () => {
     await sleep(5_000);
 
     expect(await projectsOfOpportunity()).toHaveLength(1);
+  });
+
+  it('trashes the tasks of a deleted phase and leaves them out of the progress', async () => {
+    const [project] = await projectsOfOpportunity();
+    const phases = getEdgeNodes<{ id: string; name: string }>(
+      await client.query({
+        projectPhases: {
+          __args: { filter: { projectId: { eq: project.id } }, first: 50 },
+          edges: { node: { id: true, name: true } },
+        },
+      }),
+      'projectPhases',
+    );
+    const launchPhase = phases.find((phase) => phase.name === 'Mise en ligne');
+
+    await client.mutation({
+      deleteProjectPhase: { __args: { id: launchPhase?.id }, id: true },
+    });
+
+    const trimmed = await waitFor(async () => {
+      const state = await projectState(project.id);
+
+      return state.tasks.length === 7 && state.project.progress === 29
+        ? state
+        : undefined;
+    });
+
+    expect(trimmed.phaseCount).toBe(3);
+  });
+
+  it('signs an opportunity created directly in the won column', async () => {
+    const created = await client.mutation({
+      createOpportunity: {
+        __args: {
+          data: {
+            name: '[test-interfaze] Signée hors ligne',
+            companyId,
+            offer: 'APP',
+            interfazeStage: 'WON',
+          },
+        },
+        id: true,
+      },
+    });
+    const wonOpportunityId = (created.createOpportunity as { id: string }).id;
+
+    try {
+      const project = await waitFor(async () => {
+        const response = await client.query({
+          projects: {
+            __args: { filter: { opportunityId: { eq: wonOpportunityId } } },
+            edges: { node: { id: true, name: true } },
+          },
+        });
+        const [node] = getEdgeNodes<ProjectNode>(response, 'projects');
+
+        return node;
+      });
+
+      expect(project.name).toBe(`${COMPANY_NAME} · AppFaze`);
+    } finally {
+      await client
+        .mutation({
+          destroyOpportunity: { __args: { id: wonOpportunityId }, id: true },
+        })
+        .catch(() => {});
+    }
   });
 });

@@ -44,12 +44,16 @@ export const recomputeProjectProgress = async (
     return;
   }
 
+  const phases = getEdgeNodes<PhaseNode>(response, 'projectPhases');
+  const livePhaseIds = new Set(phases.map((phase) => phase.id));
+
   const { progress, currentPhase } = computeProjectProgress({
-    phases: getEdgeNodes<PhaseNode>(response, 'projectPhases').map((phase) => ({
-      ...phase,
-      position: phase.position ?? 0,
-    })),
-    tasks: getEdgeNodes<TaskNode>(response, 'projectTasks'),
+    phases: phases.map((phase) => ({ ...phase, position: phase.position ?? 0 })),
+    // Soft-deleting a phase does not cascade on its own: until its tasks are
+    // trashed too, they must not count.
+    tasks: getEdgeNodes<TaskNode>(response, 'projectTasks').filter(
+      (task) => task.phaseId === null || livePhaseIds.has(task.phaseId),
+    ),
   });
 
   if (project.progress === progress && project.currentPhase === currentPhase) {
