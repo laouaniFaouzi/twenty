@@ -1,0 +1,4 @@
+export const APPLICATION_UNIVERSAL_IDENTIFIER =
+  'f4798e03-1996-4775-9d52-0f0bec1cf5af';
+export const DEFAULT_ROLE_UNIVERSAL_IDENTIFIER =
+  '2b524bed-2fe6-4be5-ae0b-a1bbe0ad3033';
