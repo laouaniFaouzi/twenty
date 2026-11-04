@@ -7,7 +7,6 @@ export const PROJECT_TASK_UNIVERSAL_IDENTIFIER = '4f2b88f2-f7a1-419f-b240-122b0d
 export const PROJECT_TASK_NAME_FIELD_UNIVERSAL_IDENTIFIER = '66286c36-b5d4-4b2c-be0e-bc11fb5d82aa';
 export const PROJECT_TASK_DESCRIPTION_FIELD_UNIVERSAL_IDENTIFIER = '20e6552b-5a32-4493-b3de-03046bda4ee9';
 export const PROJECT_TASK_STATUS_FIELD_UNIVERSAL_IDENTIFIER = 'eb80b460-0419-4fe0-94af-df3bb4211a19';
-export const PROJECT_TASK_POSITION_FIELD_UNIVERSAL_IDENTIFIER = '54c9df39-8c1c-4b52-9246-ac1511c23c18';
 export const PROJECT_TASK_DUE_DATE_FIELD_UNIVERSAL_IDENTIFIER = '92340a22-5e7c-4403-8be8-f4222a6d937d';
 
 export const PROJECT_TASK_STATUS_OPTIONS: {
@@ -56,14 +55,6 @@ export default defineObject({
       icon: 'IconProgressCheck',
       defaultValue: "'TODO'",
       options: PROJECT_TASK_STATUS_OPTIONS,
-    },
-    {
-      universalIdentifier: PROJECT_TASK_POSITION_FIELD_UNIVERSAL_IDENTIFIER,
-      type: FieldType.NUMBER,
-      name: 'position',
-      label: 'Position',
-      icon: 'IconSortAscendingNumbers',
-      isNullable: true,
     },
     {
       universalIdentifier: PROJECT_TASK_DUE_DATE_FIELD_UNIVERSAL_IDENTIFIER,

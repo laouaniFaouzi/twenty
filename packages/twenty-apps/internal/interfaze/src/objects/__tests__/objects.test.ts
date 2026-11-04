@@ -102,8 +102,17 @@ describe('Interfaze objects', () => {
     expect(typeOf(project, 'trackerUrl')).toBe(FieldType.LINKS);
   });
 
-  it('defines the phase fields', () => {
-    expect(typeOf(projectPhase, 'position')).toBe(FieldType.NUMBER);
+  // Twenty gives every custom object a system position field; defining our own
+  // is rejected by the server at install time.
+  it.each([
+    ['project', project],
+    ['phase', projectPhase],
+    ['tracker task', projectTask],
+    ['maintenance contract', maintenanceContract],
+  ])('leaves the %s ordering to the system position field', (_, definition) => {
+    expect(
+      definition.config.fields?.some((field) => field.name === 'position'),
+    ).toBe(false);
   });
 
   it('defines the tracker task fields', () => {
@@ -114,7 +123,6 @@ describe('Interfaze objects', () => {
     ]);
     expect(fieldNamed(projectTask, 'status').defaultValue).toBe("'TODO'");
     expect(typeOf(projectTask, 'description')).toBe(FieldType.TEXT);
-    expect(typeOf(projectTask, 'position')).toBe(FieldType.NUMBER);
     expect(typeOf(projectTask, 'dueDate')).toBe(FieldType.DATE);
   });
 
