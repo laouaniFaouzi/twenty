@@ -8,15 +8,15 @@
 
 **Tech Stack:** TypeScript, `twenty-sdk` et `twenty-client-sdk` 2.38.0, Vitest 4, oxlint, Yarn 4.13.
 
-**Spec:** `docs/superpowers/specs/2026-11-04-hubfaze-crm-interfaze-design.md` (§4, §4.3, §5.4 « Avancement », §6.1, §6.3, §10 lot 1).
+**Spec:** `docs/superpowers/specs/2026-11-04-hubfaze-crm-interfaze-design.md` (§4, §4.3, §5.4 « Avancement », §6.1, §6.3, §11 lot 1).
 
 ## Périmètre de ce lot
 
 - **Inclus** : tous les champs métier de §4.1 et §4.2, l'objet Contrat de maintenance (sans ses automatismes), les modèles de §4.3, les vues et le menu de §6.1 sauf « Pilotage », et les automatismes de §6.3 « passe à Signé » et « tâche de suivi créée ou modifiée ».
 - **Reporté au lot qui l'utilise et le teste** :
-  - au lot 2 : les champs techniques `siteLeadId`, `siteLeadStatusSeen` ;
-  - au lot 3 : `siteTrackerId`, `siteId`, `siteUpdatedAt`, `syncHash` et l'objet Journal de synchro ;
-  - au lot 4 : `responseOverdue`, `renewalTaskCreatedFor`, le tableau de bord, et les automatismes de mise en ligne et de renouvellement.
+  - au lot 3 : les champs techniques `siteLeadId`, `siteLeadStatusSeen` ;
+  - au lot 4 : `siteTrackerId`, `siteId`, `siteUpdatedAt`, `syncHash` et l'objet Journal de synchro ;
+  - au lot 5 : `responseOverdue`, `renewalTaskCreatedFor`, le tableau de bord, et les automatismes de mise en ligne et de renouvellement.
 
   Aucun de ces éléments n'a de comportement en lot 1.
 
@@ -293,7 +293,7 @@ git commit -am "Add tracker templates per offer and project progress computation
 **Interfaces:**
 - Consumes: `RecordApiClient`, `getEdgeNodes` (tâche 1), `TRACKER_TEMPLATES` (tâche 4), `ProjectStatus` (tâche 3).
 - Produces :
-  - `shouldSeedProjectTemplate(project: { offer: Offer | null; status: ProjectStatus; phaseCount: number }): boolean` : vrai si offre renseignée, statut différent d'`ARCHIVED` et aucune phase. Le lot 3 y ajoutera la condition « pas de `siteTrackerId` » ;
+  - `shouldSeedProjectTemplate(project: { offer: Offer | null; status: ProjectStatus; phaseCount: number }): boolean` : vrai si offre renseignée, statut différent d'`ARCHIVED` et aucune phase. Le lot 4 y ajoutera la condition « pas de `siteTrackerId` » ;
   - `seedProjectTemplate(client: RecordApiClient, projectId: string): Promise<{ seeded: boolean }>` ;
   - `handleProjectEvent(client: RecordApiClient, event: { name: string; recordId: string; properties: { updatedFields?: string[] } }): Promise<void>`.
 
@@ -342,7 +342,7 @@ git commit -am "Seed tracker phases and tasks when a project gets an offer"
 
 **Interfaces:**
 - Consumes: `RecordApiClient`, `getEdgeNodes`, `OFFER_LABELS` (tâche 1), `InterfazeStage` (tâche 2).
-- Produces (réutilisé par les lots 2 à 4) :
+- Produces (réutilisé par les lots 3 et 5) :
   - `createInternalTask(client: RecordApiClient, input: { title: string; assigneeId: string | null; dueAt: string | null; target: { objectName: 'opportunity' | 'company' | 'person'; recordId: string } }): Promise<{ created: boolean }>` :
     - crée une Tâche standard (`createTask` avec `title`, `status: 'TODO'`, `assigneeId`, `dueAt`), puis sa cible (`createTaskTarget` avec `taskId` et `target<Objet>Id`) ;
     - ne crée rien si une tâche de même titre, non `DONE`, est déjà liée à la même cible (lecture des `taskTargets` filtrés sur `target<Objet>Id`, avec `task { id title status }`).

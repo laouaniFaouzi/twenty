@@ -1,6 +1,7 @@
 # HubFaze · CRM d'Interfaze · Spécification
 
 > Conception validée section par section le 4 novembre 2026.
+> Pages « comme Notion » ajoutées le même jour (§7, lot 2).
 > Document de référence pour les plans d'exécution (un plan par lot, écrit au moment de l'attaquer).
 
 ## 1. Contexte et objectif
@@ -15,7 +16,8 @@ Le site interfaze.fr (dépôt `laouaniFaouzi/interfaze-site` : Next.js 16, Supab
 2. suit le pipeline commercial jusqu'à la signature ;
 3. gère les projets clients et leurs suivis, synchronisés dans les deux sens avec le site ;
 4. gère la maintenance récurrente ;
-5. donne une vue de pilotage de l'agence.
+5. donne une vue de pilotage de l'agence ;
+6. permet d'écrire et d'organiser des pages comme dans Notion : pages libres et sous-pages, modèles, pages rattachées aux fiches.
 
 **Critères de succès**
 
@@ -38,6 +40,7 @@ Le site interfaze.fr (dépôt `laouaniFaouzi/interfaze-site` : Next.js 16, Supab
 | HubFaze vers site | Déclencheurs d'événements de l'app et API REST Supabase (clé secrète) |
 | Filet de sécurité | Rapprochement complet toutes les 15 minutes |
 | Renommage | Ce que l'équipe voit. Les noms internes (`twenty-*`, variables, API) ne changent pas |
+| Pages « comme Notion » | Un objet **Page** dans l'app, édité avec l'éditeur en blocs de Twenty. Les bases de données sont les objets personnalisés de Twenty. Le cœur de Twenty n'est pas modifié |
 | Langue | Libellés en français, noms techniques en anglais (convention Twenty) |
 | Droits | Toute l'équipe a les mêmes droits, comme dans l'admin du site |
 
@@ -52,8 +55,8 @@ interfaze.fr (Next.js) ──écrit──▶ Supabase ──trigger + pg_net (se
 
 Trois blocs :
 
-1. **HubFaze** : le fork de Twenty renommé (§7). Il tourne sur une image Docker construite depuis le fork (§9).
-2. **L'app « Interfaze »** dans HubFaze : objets métier, champs ajoutés aux objets standard, vues, tableau de bord, automatismes et synchro. Elle suit le modèle des apps existantes du dépôt (`internal/real-estate` pour le modèle de données et le tableau de bord, `public/fireflies` pour le couple webhook et tâche planifiée).
+1. **HubFaze** : le fork de Twenty renommé (§8). Il tourne sur une image Docker construite depuis le fork (§10).
+2. **L'app « Interfaze »** dans HubFaze : objets métier, champs ajoutés aux objets standard, vues, tableau de bord, pages, automatismes et synchro. Elle suit le modèle des apps existantes du dépôt (`internal/real-estate` pour le modèle de données et le tableau de bord, `public/fireflies` pour le couple webhook et tâche planifiée).
 3. **Côté site** : des migrations Supabase dans `interfaze-site` (colonnes de synchro et triggers). Aucune page du site ne change. Comme tout passe par la base, l'admin du site, quand il sera construit, sera synchronisé sans travail supplémentaire.
 
 Les triggers et les déclencheurs sont la voie rapide (quelques secondes). Le rapprochement garantit que les deux côtés finissent identiques, même si un appel se perd ou si un côté est en panne.
@@ -173,7 +176,7 @@ Les phases reprennent les quatre étapes de chaque offre (`content/offres.ts` du
 
 ### 5.1 Migrations côté site
 
-Deux fichiers dans `interfaze-site/supabase/migrations/`, un par lot (demandes au lot 2, suivis au lot 3), même construction :
+Deux fichiers dans `interfaze-site/supabase/migrations/`, un par lot (demandes au lot 3, suivis au lot 4), même construction :
 
 - colonne `crm_id uuid unique` (nullable) sur `leads`, `trackers`, `tracker_phases`, `tracker_tasks` ;
 - colonne `updated_at timestamptz not null default now()` et trigger `set_updated_at` sur `leads` et `tracker_phases`, qui n'en ont pas ;
@@ -292,7 +295,79 @@ Si les widgets ne savent pas filtrer sur une date relative (« il y a plus de 48
 
 Le statut Ancien client se met à la main.
 
-## 7. Renommage HubFaze
+## 7. Pages « comme Notion »
+
+### 7.1 Objet Page (`page`)
+
+| Champ | Libellé | Type |
+|---|---|---|
+| `title` | Titre | TEXT, identifiant de la page, cherchable dans la recherche globale |
+| `icon` | Icône | TEXT, un emoji, facultatif |
+| `content` | Contenu | RICH_TEXT, édité avec l'éditeur en blocs de Twenty (menu « / », titres, listes, cases à cocher, images, mentions « @ » de fiches) |
+| `parentPage` | Page parente | relation vers Page. À la suppression de la parente : `SET_NULL`, les sous-pages remontent d'un niveau |
+| `subPages` | Sous-pages | côté un vers plusieurs de `parentPage` |
+| `position` | Position | NUMBER, ordre parmi les pages sœurs |
+| `isTemplate` | Modèle | BOOLEAN, faux par défaut |
+| `project`, `company`, `opportunity` | Projet, Société, Opportunité | relations facultatives, `SET_NULL` à la suppression de la fiche |
+
+La relation d'une Page vers elle-même est vérifiée au premier test du lot. Si le serveur la refuse, `parentPage` devient un champ TEXT `parentPageId` (identifiant de la parente), et l'arborescence comme les copies s'appuient sur lui.
+
+### 7.2 Entrée « Pages » du menu
+
+Une page autonome (`STANDALONE_PAGE`) avec un composant d'interface de l'app :
+
+- **Arborescence** dépliable des pages qui ne sont pas des modèles. Les pages sœurs sont triées par `position`, puis par titre.
+- **Sur chaque ligne** : l'icône et le titre (un clic ouvre la page), « + sous-page », « Monter » et « Descendre ». Monter ou descendre échange la position avec la page sœur voisine.
+- **En haut** : « Nouvelle page » (à la racine, en dernière position) et « Depuis un modèle ».
+- **En bas** : une section « Modèles », repliée par défaut.
+
+Une nouvelle page s'appelle « Sans titre » et s'ouvre aussitôt.
+
+### 7.3 Page ouverte
+
+Fiche de l'objet Page (`RECORD_PAGE`) :
+
+- **Onglet « Page »** :
+  - un composant d'interface en haut, avec le fil d'Ariane (Pages › parentes › page, chaque élément cliquable), la liste des sous-pages et « + sous-page » ;
+  - le contenu en dessous, dans un widget `FIELD_RICH_TEXT` sur `content`.
+- **Onglet « Infos »** : page parente, rattachements, Modèle.
+- **Onglet « Historique »** : la timeline.
+
+### 7.4 Modèles
+
+- **La commande « Nouvelle page depuis un modèle »** est disponible dans la page Pages et sur les fiches Projet, Société et Opportunité. Elle ouvre la liste des modèles, puis :
+  - copie le modèle choisi et toutes ses sous-pages (titre, icône, contenu, ordre), avec `isTemplate` faux ;
+  - rattache la nouvelle page à la fiche d'où la commande est lancée ;
+  - ouvre la nouvelle page.
+- **Quatre modèles** sont créés à l'installation de l'app, une seule fois : un modèle dont le titre existe déjà n'est jamais recréé ni écrasé. Leur texte suit le ton du site (direct, phrases courtes) :
+
+| Modèle | Rubriques |
+|---|---|
+| Compte rendu de réunion | Date · Participants · Objet · Ce qui a été dit · Décisions · Prochaines étapes (cases à cocher) · Prochain rendez-vous |
+| Brief projet | Le client et son activité · Ce qui bloque ou ce qui manque · Ce qui doit changer pour lui · Ses clients · Contenus disponibles · Exemples qu'il aime · Contraintes (budget, date) · Offre envisagée |
+| Cahier des charges | Contexte · Objectifs · Inclus · Non inclus · Pages ou écrans · Fonctionnalités · Contenus · Référencement · Hébergement et mise en ligne · Planning · Validation |
+| Bilan de mise en ligne | Ce qui a été livré · Date annoncée et date réelle · Ce qui a bien marché · Ce qu'on améliore · Résultats à 30 jours · Proposition de maintenance |
+
+### 7.5 Pages dans les fiches
+
+- Un onglet « Pages » est ajouté aux fiches Projet, Société et Opportunité (`definePageLayoutTab` pour les fiches standard, sans toucher à leurs autres onglets).
+- Il liste les pages rattachées, dans un widget `FIELD` en mode TABLE sur la relation `pages`, avec un bouton « Nouvelle page » qui crée une page rattachée à la fiche et l'ouvre.
+- Les Notes de Twenty restent disponibles à côté.
+
+### 7.6 Bases de données
+
+Rien à construire : ce sont les objets personnalisés de Twenty (Paramètres › Modèle de données). À l'installation, une page « Créer une base de données » est créée une seule fois à la racine. Elle explique la démarche en 5 étapes :
+1. créer l'objet ;
+2. ajouter ses propriétés ;
+3. créer ses vues (table, kanban, calendrier) ;
+4. l'ajouter au menu ;
+5. le relier à une société ou à un projet par une relation.
+
+### 7.7 Hors V1
+
+Glisser-déposer dans l'arborescence, arborescence dans la barre latérale elle-même, base de données insérée au milieu d'un texte, partage public d'une page.
+
+## 8. Renommage HubFaze
 
 **Ce qui change**
 
@@ -312,7 +387,7 @@ Le statut Ancien client se met à la main.
 
 **Licence AGPL** : le fichier `LICENSE` et les mentions de copyright sont conservés. Un lien **« Code source »** vers le fork GitHub est ajouté dans les paramètres, comme l'exige la licence pour un logiciel utilisé en réseau.
 
-## 8. Tests
+## 9. Tests
 
 - **Unitaires** (Vitest, comme les autres apps) :
   - conversion demande → personne, société, opportunité (dont le découpage du nom et la recherche sans casse ni accents) ;
@@ -322,7 +397,8 @@ Le statut Ancien client se met à la main.
   - « la plus récente l'emporte », modification en retard ignorée, détection des échos par empreinte ;
   - génération du code de suivi ;
   - tâche de renouvellement créée une seule fois ;
-  - règle des 3 ans.
+  - règle des 3 ans ;
+  - construction de l'arborescence des pages, échange de position, copie d'un modèle avec ses sous-pages, modèles créés une seule fois.
 - **Intégration** (sur le modèle de `public/linear` et `public/fireflies`), avec un HubFaze local et un Supabase local (`supabase start` dans `interfaze-site`) :
   - installation de l'app ;
   - webhook refusé sans le bon secret ;
@@ -339,7 +415,7 @@ Le statut Ancien client se met à la main.
   2. l'opportunité passe en Signé, ce qui crée le projet et le suivi ;
   3. une tâche cochée dans HubFaze arrive dans Supabase, puis une modification faite côté site revient dans HubFaze.
 
-## 9. Mise en production
+## 10. Mise en production
 
 - **Serveur** : un VPS d'au moins 2 vCPU, 4 Go de RAM et 40 Go de disque, hébergé dans l'Union européenne, avec Docker Compose repris de `packages/twenty-docker` (serveur, worker, Postgres, Redis).
 - **Image** : `ghcr.io/laouanifaouzi/hubfaze`, construite par GitHub Actions depuis le fork, à chaque version étiquetée.
@@ -350,32 +426,34 @@ Le statut Ancien client se met à la main.
 - **Site** : la page Confidentialité ajoute l'hébergeur du VPS à la liste des sous-traitants.
 - **Mises à jour** : récupération régulière des versions de Twenty dans le fork, script de contrôle de la marque, nouvelle image, déploiement.
 
-## 10. Ordre de construction (lots)
+## 11. Ordre de construction (lots)
 
 Chaque lot est validé avant le suivant et reçoit son propre plan dans `docs/superpowers/plans/`.
 
 | Lot | Contenu | Fini quand |
 |---|---|---|
 | 1. Modèle, pipeline et vues | App `interfaze` : objets et champs (§4), modèles (§4.3), vues et menu (§6.1), automatismes internes (signature, avancement) | On crée une opportunité à la main, on la signe, et le projet apparaît avec ses phases, ses tâches et son avancement |
-| 2. Demandes | Migration des demandes, route d'entrée, traitement des demandes, étape ↔ statut, tâche 48 h, règle des 3 ans | Une demande insérée dans le Supabase local crée personne, société, opportunité et tâche, et le changement d'étape revient dans `leads.status` |
-| 3. Suivis | Migration des suivis, synchro dans les deux sens, rapprochement, Journal de synchro | Une modification faite de chaque côté arrive de l'autre, et un appel coupé est réparé par le rapprochement |
-| 4. Maintenance et pilotage | Contrats, mise en ligne, renouvellements, tableau de bord | Le tableau de bord affiche des chiffres justes sur un jeu de données de test |
-| 5. HubFaze | Renommage (§7) | Le script de contrôle passe et aucun « Twenty » n'est visible dans les parcours de connexion, d'accueil, de paramètres et d'e-mails |
-| 6. Mise en production | §9 | La recette en production (§8) passe |
+| 2. Pages | Objet Page, arborescence, page ouverte, modèles, onglet Pages sur les fiches, page d'aide des bases de données (§7) | On crée une page et une sous-page depuis l'arborescence, on crée un brief depuis une fiche projet à partir du modèle, et il apparaît dans l'onglet Pages du projet |
+| 3. Demandes | Migration des demandes, route d'entrée, traitement des demandes, étape ↔ statut, tâche 48 h, règle des 3 ans | Une demande insérée dans le Supabase local crée personne, société, opportunité et tâche, et le changement d'étape revient dans `leads.status` |
+| 4. Suivis | Migration des suivis, synchro dans les deux sens, rapprochement, Journal de synchro | Une modification faite de chaque côté arrive de l'autre, et un appel coupé est réparé par le rapprochement |
+| 5. Maintenance et pilotage | Contrats, mise en ligne, renouvellements, tableau de bord | Le tableau de bord affiche des chiffres justes sur un jeu de données de test |
+| 6. HubFaze | Renommage (§8) | Le script de contrôle passe et aucun « Twenty » n'est visible dans les parcours de connexion, d'accueil, de paramètres et d'e-mails |
+| 7. Mise en production | §10 | La recette en production (§9) passe |
 
-## 11. Prérequis côté utilisateur
+## 12. Prérequis côté utilisateur
 
-- Un VPS (§9) et l'accès à son hébergeur.
+- Un VPS (§10) et l'accès à son hébergeur.
 - L'enregistrement DNS `crm.interfaze.fr`.
 - Les clés du projet Supabase de production.
-- Un accès en écriture pour la session de développement sur `laouaniFaouzi/interfaze-site`, pour y pousser les migrations (lots 2 et 3).
+- Un accès en écriture pour la session de développement sur `laouaniFaouzi/interfaze-site`, pour y pousser les migrations (lots 3 et 4).
 - GitHub Packages activé pour publier l'image.
 - Les identifiants SMTP Resend (domaine interfaze.fr déjà vérifié pour le site).
 - Les adresses e-mail de Faouzi, Lucas et Léo pour les invitations.
 
-## 12. Points ouverts (sans impact sur le démarrage)
+## 13. Points ouverts (sans impact sur le démarrage)
 
 - **Logo HubFaze définitif** : l'astérisque Interfaze sert de logo provisoire.
 - **Modèle de prix** (achat, abonnement ou hybride, encore en réflexion d'après la stratégie de message du site) : il peut ajouter des champs aux contrats de maintenance.
 - **Conservation des données clients** (« durée de la relation, puis 5 ans » selon la politique de confidentialité) : en V1, HubFaze ne purge pas les clients. Une vue « Anciens clients » à revoir une fois par an suffit au démarrage.
+- **Pages** : le glisser-déposer et l'arborescence dans la barre latérale (§7.7) seront reconsidérés après quelques semaines d'usage.
 - **Admin du site** : le lot 5 du site garde le changement de statut des demandes (géré par la règle « vers l'avant », §5.3) ; le lot 6 recopie les modèles de suivi (§4.3).
