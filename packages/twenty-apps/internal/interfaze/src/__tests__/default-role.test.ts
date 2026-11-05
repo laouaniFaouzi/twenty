@@ -2,6 +2,7 @@ import { STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';
 import { describe, expect, it } from 'vitest';
 
 import defaultRole from 'src/default-role';
+import { PAGE_UNIVERSAL_IDENTIFIER } from 'src/objects/page.object';
 import { PROJECT_UNIVERSAL_IDENTIFIER } from 'src/objects/project.object';
 import { PROJECT_PHASE_UNIVERSAL_IDENTIFIER } from 'src/objects/project-phase.object';
 import { PROJECT_TASK_UNIVERSAL_IDENTIFIER } from 'src/objects/project-task.object';
@@ -31,6 +32,7 @@ describe('default role', () => {
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.taskTarget.universalIdentifier,
       PROJECT_UNIVERSAL_IDENTIFIER,
       PROJECT_PHASE_UNIVERSAL_IDENTIFIER,
+      PAGE_UNIVERSAL_IDENTIFIER,
     ]) {
       expect(permissionFor(objectUniversalIdentifier)).toMatchObject({
         canReadObjectRecords: true,
