@@ -1,0 +1,15 @@
+export const PAGES_TEST_IDS = {
+  tree: 'interfaze-pages-tree',
+  newPage: 'interfaze-pages-new-page',
+  newFromTemplate: 'interfaze-pages-new-from-template',
+  templatePicker: 'interfaze-pages-template-picker',
+  templateOption: 'interfaze-pages-template-option',
+  addSubPage: 'interfaze-pages-add-sub-page',
+  moveUp: 'interfaze-pages-move-up',
+  moveDown: 'interfaze-pages-move-down',
+  templatesSection: 'interfaze-pages-templates-section',
+  breadcrumb: 'interfaze-pages-breadcrumb',
+  subPages: 'interfaze-pages-sub-pages',
+  recordNewPage: 'interfaze-pages-record-new-page',
+  recordNewFromTemplate: 'interfaze-pages-record-new-from-template',
+} as const;
