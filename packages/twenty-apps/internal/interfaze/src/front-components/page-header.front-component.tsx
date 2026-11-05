@@ -11,6 +11,7 @@ import {
   pageLabel,
   recordApiClient,
   usePalette,
+  useSingleFlight,
 } from 'src/front-components/page-ui';
 import { PAGES_TEST_IDS } from 'src/front-components/pages-test-ids';
 import { createPage, fetchPageSummaries } from 'src/utils/page-records';
@@ -41,6 +42,7 @@ const PageHeader = () => {
   const palette = usePalette();
   const pageId = useRecordId();
   const [pages, setPages] = useState<PageSummary[]>([]);
+  const { isBusy, run } = useSingleFlight();
 
   const loadPages = useCallback(async () => {
     try {
@@ -60,19 +62,22 @@ const PageHeader = () => {
 
   const current = pages.find((page) => page.id === pageId);
   const ancestors = ancestorsOf(pageId, pages);
-  const subPages = orderSiblings(pages.filter((page) => page.parentPageId === pageId));
+  const subPages = orderSiblings(
+    pages.filter((page) => page.parentPageId === pageId),
+  );
 
-  const addSubPage = async () => {
-    try {
-      const created = await createPage(recordApiClient(), {
-        parentPageId: pageId,
-        attachment: null,
-      });
-      await openPage(created.pageId);
-    } catch {
-      await notifyError("La page n'a pas pu être créée.");
-    }
-  };
+  const addSubPage = () =>
+    run(async () => {
+      try {
+        const created = await createPage(recordApiClient(), {
+          parentPageId: pageId,
+          attachment: null,
+        });
+        await openPage(created.pageId);
+      } catch {
+        await notifyError("La page n'a pas pu être créée.");
+      }
+    });
 
   const crumbStyle = {
     background: 'transparent',
@@ -87,15 +92,28 @@ const PageHeader = () => {
     <div style={{ color: palette.text, padding: '8px 4px' }}>
       <div
         data-testid={PAGES_TEST_IDS.breadcrumb}
-        style={{ alignItems: 'center', display: 'flex', flexWrap: 'wrap', gap: '6px' }}
+        style={{
+          alignItems: 'center',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '6px',
+        }}
       >
-        <button type="button" style={crumbStyle} onClick={() => openPagesHome()}>
+        <button
+          type="button"
+          style={crumbStyle}
+          onClick={() => openPagesHome()}
+        >
           Pages
         </button>
         {ancestors.map((ancestor) => (
           <span key={ancestor.id} style={{ display: 'flex', gap: '6px' }}>
             <span style={{ color: palette.muted }}>›</span>
-            <button type="button" style={crumbStyle} onClick={() => openPage(ancestor.id)}>
+            <button
+              type="button"
+              style={crumbStyle}
+              onClick={() => openPage(ancestor.id)}
+            >
               {pageLabel(ancestor)}
             </button>
           </span>
@@ -109,7 +127,12 @@ const PageHeader = () => {
       </div>
       <div
         data-testid={PAGES_TEST_IDS.subPages}
-        style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '6px',
+          marginTop: '8px',
+        }}
       >
         {subPages.map((subPage) => (
           <ActionButton
@@ -123,6 +146,7 @@ const PageHeader = () => {
           label="+ sous-page"
           testId={PAGES_TEST_IDS.addSubPage}
           palette={palette}
+          disabled={isBusy}
           onClick={addSubPage}
         />
       </div>

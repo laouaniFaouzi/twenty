@@ -4,10 +4,12 @@ import {
   type PageSummary,
   UNTITLED_PAGE_TITLE,
 } from 'src/utils/page-tree';
-import { getEdgeNodes, type RecordApiClient } from 'src/utils/record-api-client';
+import {
+  getEdgeNodes,
+  type RecordApiClient,
+} from 'src/utils/record-api-client';
 
-// An agency keeps a few hundred pages at most; one page of results covers it.
-const PAGE_LIMIT = 500;
+const PAGE_SIZE = 200;
 
 export type PageAttachment = {
   objectName: 'project' | 'company' | 'opportunity';
@@ -16,34 +18,54 @@ export type PageAttachment = {
 
 type PageContent = { markdown: string | null; blocknote: string | null } | null;
 
-type PageNode = Omit<PageSummary, 'isTemplate'> & { isTemplate: boolean | null };
+type PageNode = Omit<PageSummary, 'isTemplate'> & {
+  isTemplate: boolean | null;
+};
 
 const attachmentData = (attachment: PageAttachment | null) =>
   attachment ? { [`${attachment.objectName}Id`]: attachment.recordId } : {};
 
+type PageInfo = { hasNextPage?: boolean; endCursor?: string | null };
+
 export const fetchPageSummaries = async (
   client: RecordApiClient,
 ): Promise<PageSummary[]> => {
-  const response = await client.query({
-    pages: {
-      __args: { first: PAGE_LIMIT },
-      edges: {
-        node: {
-          id: true,
-          title: true,
-          icon: true,
-          position: true,
-          parentPageId: true,
-          isTemplate: true,
+  const pages: PageSummary[] = [];
+  let after: string | undefined;
+
+  do {
+    const response = await client.query({
+      pages: {
+        __args: { first: PAGE_SIZE, ...(after ? { after } : {}) },
+        pageInfo: { hasNextPage: true, endCursor: true },
+        edges: {
+          node: {
+            id: true,
+            title: true,
+            icon: true,
+            position: true,
+            parentPageId: true,
+            isTemplate: true,
+          },
         },
       },
-    },
-  });
+    });
 
-  return getEdgeNodes<PageNode>(response, 'pages').map((page) => ({
-    ...page,
-    isTemplate: page.isTemplate ?? false,
-  }));
+    pages.push(
+      ...getEdgeNodes<PageNode>(response, 'pages').map((page) => ({
+        ...page,
+        isTemplate: page.isTemplate ?? false,
+      })),
+    );
+
+    const pageInfo = (response.pages as { pageInfo?: PageInfo } | null)
+      ?.pageInfo;
+    after = pageInfo?.hasNextPage
+      ? (pageInfo.endCursor ?? undefined)
+      : undefined;
+  } while (after !== undefined);
+
+  return pages;
 };
 
 const createPageRecord = async (
@@ -105,8 +127,10 @@ const fetchPageContents = async (
 ): Promise<Map<string, PageContent>> => {
   const response = await client.query({
     pages: {
-      __args: { filter: { id: { in: pageIds } }, first: PAGE_LIMIT },
-      edges: { node: { id: true, content: { markdown: true, blocknote: true } } },
+      __args: { filter: { id: { in: pageIds } }, first: pageIds.length },
+      edges: {
+        node: { id: true, content: { markdown: true, blocknote: true } },
+      },
     },
   });
 
@@ -158,7 +182,9 @@ export const copyPageTemplate = async (
   for (let index = 0; index < queue.length; index += 1) {
     const [sourceId, copyId] = queue[index];
     const children = orderSiblings(
-      pages.filter((page) => page.parentPageId === sourceId && subtree.has(page.id)),
+      pages.filter(
+        (page) => page.parentPageId === sourceId && subtree.has(page.id),
+      ),
     );
 
     for (const [rank, child] of children.entries()) {

@@ -6,7 +6,11 @@ import {
   type MockRecordApiClient,
   mutationArgs,
 } from 'src/__tests__/utils/create-mock-record-api-client';
-import { copyPageTemplate, createPage } from 'src/utils/page-records';
+import {
+  copyPageTemplate,
+  createPage,
+  fetchPageSummaries,
+} from 'src/utils/page-records';
 import { type PageSummary } from 'src/utils/page-tree';
 
 let client: MockRecordApiClient;
@@ -77,6 +81,23 @@ describe('createPage', () => {
     expect(mutationArgs(client, 'createPage')[0]).toEqual({
       data: { title: 'Sans titre', isTemplate: false, parentPageId: null, position: 0, projectId: 'p1' },
     });
+  });
+});
+
+describe('fetchPageSummaries', () => {
+  it('reads every page, page after page', async () => {
+    client.query
+      .mockResolvedValueOnce({
+        pages: { ...connection([summary('a')]), pageInfo: { hasNextPage: true, endCursor: 'cursor-1' } },
+      })
+      .mockResolvedValueOnce({
+        pages: { ...connection([summary('b')]), pageInfo: { hasNextPage: false, endCursor: 'cursor-2' } },
+      });
+
+    const pages = await fetchPageSummaries(client);
+
+    expect(pages.map((page) => page.id)).toEqual(['a', 'b']);
+    expect(client.query.mock.calls[1][0].pages.__args).toMatchObject({ after: 'cursor-1' });
   });
 });
 

@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { CoreApiClient } from 'twenty-client-sdk/core';
 import { MetadataApiClient } from 'twenty-client-sdk/metadata';
 import {
@@ -10,7 +11,11 @@ import {
 import { PAGES_PAGE_LAYOUT_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
 import { PAGES_TEST_IDS } from 'src/front-components/pages-test-ids';
 import { type PageSummary, UNTITLED_PAGE_TITLE } from 'src/utils/page-tree';
-import { type RecordApiClient, toRecordApiClient } from 'src/utils/record-api-client';
+import {
+  type RecordApiClient,
+  toRecordApiClient,
+} from 'src/utils/record-api-client';
+import { createSingleFlight } from 'src/utils/single-flight';
 
 export type Palette = {
   text: string;
@@ -37,6 +42,24 @@ const DARK: Palette = {
   hover: '#262626',
   accent: '#4a7cf0',
   accentText: '#ffffff',
+};
+
+export const useSingleFlight = () => {
+  const flight = useRef(createSingleFlight()).current;
+  const [isBusy, setIsBusy] = useState(false);
+
+  const run = (task: () => Promise<void>) =>
+    flight.run(async () => {
+      setIsBusy(true);
+
+      try {
+        await task();
+      } finally {
+        setIsBusy(false);
+      }
+    });
+
+  return { isBusy, run };
 };
 
 export const usePalette = (): Palette =>

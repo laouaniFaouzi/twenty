@@ -56,6 +56,14 @@ describe('Page object', () => {
     });
   });
 
+  it('remembers, out of sight, the parent a sub-page had before it was trashed', () => {
+    expect(fieldNamed('previousParentPageId')).toMatchObject({
+      type: FieldType.TEXT,
+      isUIEditable: false,
+      isNullable: true,
+    });
+  });
+
   it('leaves ordering to the system position field', () => {
     expect(page.config.fields?.some((field) => field.name === 'position')).toBe(false);
   });

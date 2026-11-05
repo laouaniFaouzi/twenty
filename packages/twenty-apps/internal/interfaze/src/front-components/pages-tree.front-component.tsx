@@ -11,6 +11,7 @@ import {
   recordApiClient,
   TemplatePicker,
   usePalette,
+  useSingleFlight,
 } from 'src/front-components/page-ui';
 import { PAGES_TEST_IDS } from 'src/front-components/pages-test-ids';
 import {
@@ -32,13 +33,19 @@ type TreeRowProps = {
   expanded: Set<string>;
   palette: Palette;
   withActions: boolean;
+  isBusy: boolean;
   onToggle: (pageId: string) => void;
   onAddSubPage: (node: PageTreeNode) => void;
-  onMove: (node: PageTreeNode, siblings: PageTreeNode[], direction: 'up' | 'down') => void;
+  onMove: (
+    node: PageTreeNode,
+    siblings: PageTreeNode[],
+    direction: 'up' | 'down',
+  ) => void;
 };
 
 const TreeRow = (props: TreeRowProps) => {
-  const { node, siblings, depth, expanded, palette, withActions } = props;
+  const { node, siblings, depth, expanded, palette, withActions, isBusy } =
+    props;
   const isExpanded = expanded.has(node.id);
   const index = siblings.findIndex((sibling) => sibling.id === node.id);
 
@@ -91,6 +98,7 @@ const TreeRow = (props: TreeRowProps) => {
               title="Ajouter une sous-page"
               testId={PAGES_TEST_IDS.addSubPage}
               palette={palette}
+              disabled={isBusy}
               onClick={() => props.onAddSubPage(node)}
             />
             <ActionButton
@@ -98,7 +106,7 @@ const TreeRow = (props: TreeRowProps) => {
               title="Monter"
               testId={PAGES_TEST_IDS.moveUp}
               palette={palette}
-              disabled={index <= 0}
+              disabled={isBusy || index <= 0}
               onClick={() => props.onMove(node, siblings, 'up')}
             />
             <ActionButton
@@ -106,7 +114,7 @@ const TreeRow = (props: TreeRowProps) => {
               title="Descendre"
               testId={PAGES_TEST_IDS.moveDown}
               palette={palette}
-              disabled={index === siblings.length - 1}
+              disabled={isBusy || index === siblings.length - 1}
               onClick={() => props.onMove(node, siblings, 'down')}
             />
           </>
@@ -132,6 +140,7 @@ const PagesTree = () => {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [isPickingTemplate, setIsPickingTemplate] = useState(false);
   const [areTemplatesOpen, setAreTemplatesOpen] = useState(false);
+  const { isBusy, run } = useSingleFlight();
 
   const loadPages = useCallback(async () => {
     try {
@@ -158,60 +167,70 @@ const PagesTree = () => {
       return next;
     });
 
-  const createAndOpen = async (parentPageId: string | null) => {
-    try {
-      const { pageId } = await createPage(recordApiClient(), {
-        parentPageId,
-        attachment: null,
-      });
-      await openPage(pageId);
-    } catch {
-      await notifyError("La page n'a pas pu être créée.");
-    }
-  };
+  const createAndOpen = (parentPageId: string | null) =>
+    run(async () => {
+      try {
+        const { pageId } = await createPage(recordApiClient(), {
+          parentPageId,
+          attachment: null,
+        });
+        await openPage(pageId);
+      } catch {
+        await notifyError("La page n'a pas pu être créée.");
+      }
+    });
 
-  const copyAndOpen = async (template: PageSummary) => {
-    setIsPickingTemplate(false);
+  const copyAndOpen = (template: PageSummary) =>
+    run(async () => {
+      setIsPickingTemplate(false);
 
-    try {
-      const { pageId } = await copyPageTemplate(recordApiClient(), {
-        templateId: template.id,
-        parentPageId: null,
-        attachment: null,
-      });
-      await openPage(pageId);
-    } catch {
-      await notifyError("Le modèle n'a pas pu être copié.");
-    }
-  };
+      try {
+        const { pageId } = await copyPageTemplate(recordApiClient(), {
+          templateId: template.id,
+          parentPageId: null,
+          attachment: null,
+        });
+        await openPage(pageId);
+      } catch {
+        await notifyError("Le modèle n'a pas pu être copié.");
+      }
+    });
 
-  const move = async (
+  const move = (
     node: PageTreeNode,
     siblings: PageTreeNode[],
     direction: 'up' | 'down',
-  ) => {
-    const client = recordApiClient();
+  ) =>
+    run(async () => {
+      const client = recordApiClient();
 
-    try {
-      for (const { id, position } of computeSiblingReorder(siblings, node.id, direction)) {
-        await client.mutation({
-          updatePage: { __args: { id, data: { position } }, id: true },
-        });
+      try {
+        for (const { id, position } of computeSiblingReorder(
+          siblings,
+          node.id,
+          direction,
+        )) {
+          await client.mutation({
+            updatePage: { __args: { id, data: { position } }, id: true },
+          });
+        }
+        await loadPages();
+      } catch {
+        await notifyError("L'ordre des pages n'a pas pu être modifié.");
       }
-      await loadPages();
-    } catch {
-      await notifyError("L'ordre des pages n'a pas pu être modifié.");
-    }
-  };
+    });
 
   if (pages === null) {
-    return <div style={{ color: palette.muted, padding: '12px' }}>Chargement…</div>;
+    return (
+      <div style={{ color: palette.muted, padding: '12px' }}>Chargement…</div>
+    );
   }
 
   const { roots, templates } = buildPageTree(pages);
   const rowProps = {
     expanded,
     palette,
+    isBusy,
     onToggle: toggle,
     onAddSubPage: (node: PageTreeNode) => createAndOpen(node.id),
     onMove: move,
@@ -228,12 +247,14 @@ const PagesTree = () => {
           label="Nouvelle page"
           testId={PAGES_TEST_IDS.newPage}
           palette={palette}
+          disabled={isBusy}
           onClick={() => createAndOpen(null)}
         />
         <ActionButton
           label="Depuis un modèle"
           testId={PAGES_TEST_IDS.newFromTemplate}
           palette={palette}
+          disabled={isBusy}
           onClick={() => setIsPickingTemplate(true)}
         />
       </div>
@@ -260,7 +281,10 @@ const PagesTree = () => {
           withActions
         />
       ))}
-      <div data-testid={PAGES_TEST_IDS.templatesSection} style={{ marginTop: '16px' }}>
+      <div
+        data-testid={PAGES_TEST_IDS.templatesSection}
+        style={{ marginTop: '16px' }}
+      >
         <button
           type="button"
           onClick={() => setAreTemplatesOpen((open) => !open)}

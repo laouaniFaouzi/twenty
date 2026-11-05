@@ -1,6 +1,6 @@
 {
   "name": "interfaze",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Interfaze business layer for HubFaze: pipeline, projects, client trackers and maintenance",
   "license": "MIT",
   "engines": {

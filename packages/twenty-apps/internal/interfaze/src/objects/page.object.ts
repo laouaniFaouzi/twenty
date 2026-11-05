@@ -5,6 +5,7 @@ export const PAGE_UNIVERSAL_IDENTIFIER = '1a50b7e8-0ec1-4e22-b100-5e9f99e87034';
 export const PAGE_TITLE_FIELD_UNIVERSAL_IDENTIFIER = '00aea0f5-ba0f-45f6-8d13-cb426673f186';
 export const PAGE_ICON_FIELD_UNIVERSAL_IDENTIFIER = '4d04c853-c94c-4a01-9fc6-698b15dbb362';
 export const PAGE_CONTENT_FIELD_UNIVERSAL_IDENTIFIER = '2d2528c0-990a-415e-9866-18cc129268e0';
+export const PAGE_PREVIOUS_PARENT_PAGE_ID_FIELD_UNIVERSAL_IDENTIFIER = '3e5320d0-cec5-4866-b72c-acfc4ecaaedf';
 export const PAGE_IS_TEMPLATE_FIELD_UNIVERSAL_IDENTIFIER = '632c2ac7-05ce-471a-9c53-6ba27e95a775';
 
 export default defineObject({
@@ -51,6 +52,17 @@ export default defineObject({
       description: 'Une page modèle sert de point de départ à de nouvelles pages',
       icon: 'IconTemplate',
       defaultValue: false,
+    },
+    {
+      universalIdentifier: PAGE_PREVIOUS_PARENT_PAGE_ID_FIELD_UNIVERSAL_IDENTIFIER,
+      type: FieldType.TEXT,
+      name: 'previousParentPageId',
+      label: 'Ancienne page parente',
+      description:
+        'Technique : la page parente avant sa mise à la corbeille, pour la retrouver à la restauration',
+      icon: 'IconHistory',
+      isNullable: true,
+      isUIEditable: false,
     },
   ],
 });

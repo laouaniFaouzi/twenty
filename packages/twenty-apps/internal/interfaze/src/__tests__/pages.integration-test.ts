@@ -126,7 +126,7 @@ describe('Interfaze pages', () => {
     expect(copiedChildren[0].id).not.toBe(subPageId);
   });
 
-  it('moves the sub-pages of a deleted page up to its parent', async () => {
+  it('moves the sub-pages of a trashed page up, and back when it is restored', async () => {
     const grandParentId = await createPageRecord({ title: '[test-pages] Racine' });
     const parentId = await createPageRecord({ title: '[test-pages] Parente', parentPageId: grandParentId });
     const childId = await createPageRecord({ title: '[test-pages] Enfant', parentPageId: parentId });
@@ -140,5 +140,15 @@ describe('Interfaze pages', () => {
     });
 
     expect(child.parentPageId).toBe(grandParentId);
+
+    await client.mutation({ restorePage: { __args: { id: parentId }, id: true } });
+
+    const restoredChild = await waitFor(async () => {
+      const [node] = await pagesWhere({ id: { eq: childId } });
+
+      return node?.parentPageId === parentId ? node : undefined;
+    });
+
+    expect(restoredChild.parentPageId).toBe(parentId);
   });
 });
