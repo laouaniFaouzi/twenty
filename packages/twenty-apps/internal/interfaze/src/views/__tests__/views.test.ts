@@ -129,7 +129,7 @@ describe('Interfaze views', () => {
 });
 
 describe('Project record page', () => {
-  it('has the Projet, Suivi, Contrats and Historique tabs in order', () => {
+  it('has the Projet, Suivi, Contrats, Pages and Historique tabs in order', () => {
     expect(projectPageLayout.success).toBe(true);
     expect(projectPageLayout.config.type).toBe('RECORD_PAGE');
     expect(
@@ -138,6 +138,7 @@ describe('Project record page', () => {
       ['Projet', 10],
       ['Suivi', 20],
       ['Contrats', 30],
+      ['Pages', 35],
       ['Historique', 40],
     ]);
   });

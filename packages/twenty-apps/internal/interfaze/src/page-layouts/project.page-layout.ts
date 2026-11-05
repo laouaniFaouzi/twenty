@@ -1,11 +1,14 @@
 import { definePageLayout, PageLayoutTabLayoutMode } from 'twenty-sdk/define';
 
+import { PROJECT_PAGES_ACTIONS_FRONT_COMPONENT_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
+import { PAGES_ON_PROJECT_FIELD_UNIVERSAL_IDENTIFIER } from 'src/fields/project-on-page.field';
 import { MAINTENANCE_CONTRACTS_ON_PROJECT_FIELD_UNIVERSAL_IDENTIFIER } from 'src/fields/project-on-maintenance-contract.field';
 import { TRACKER_TASKS_ON_PROJECT_FIELD_UNIVERSAL_IDENTIFIER } from 'src/fields/project-on-project-task.field';
 import { PROJECT_UNIVERSAL_IDENTIFIER } from 'src/objects/project.object';
 import { PROJECT_CONTRACTS_WIDGET_VIEW_UNIVERSAL_IDENTIFIER } from 'src/views/project-contracts-widget.view';
 import { PROJECT_RECORD_PAGE_FIELDS_VIEW_UNIVERSAL_IDENTIFIER } from 'src/views/project-record-page-fields.view';
 import { PROJECT_TRACKER_TASKS_WIDGET_VIEW_UNIVERSAL_IDENTIFIER } from 'src/views/project-tracker-tasks-widget.view';
+import { RECORD_PAGES_WIDGET_VIEW_UNIVERSAL_IDENTIFIER } from 'src/views/record-pages-widget.view';
 
 export const PROJECT_PAGE_LAYOUT_UNIVERSAL_IDENTIFIER = 'ec1a0927-bec7-4c8b-9477-2d3ca6ff4dfe';
 
@@ -71,6 +74,35 @@ export default definePageLayout({
             fieldMetadataId: MAINTENANCE_CONTRACTS_ON_PROJECT_FIELD_UNIVERSAL_IDENTIFIER,
             fieldDisplayMode: 'TABLE',
             viewId: PROJECT_CONTRACTS_WIDGET_VIEW_UNIVERSAL_IDENTIFIER,
+          },
+        },
+      ],
+    },
+    {
+      universalIdentifier: '7365f1b2-d0b5-42ef-8eb4-01dd2dedcca1',
+      title: 'Pages',
+      position: 35,
+      icon: 'IconNotes',
+      layoutMode: PageLayoutTabLayoutMode.VERTICAL_LIST,
+      widgets: [
+        {
+          universalIdentifier: '687241ce-52c0-4a49-aadd-898e0f2eca97',
+          title: 'Nouvelle page',
+          type: 'FRONT_COMPONENT',
+          configuration: {
+            configurationType: 'FRONT_COMPONENT',
+            frontComponentUniversalIdentifier: PROJECT_PAGES_ACTIONS_FRONT_COMPONENT_UNIVERSAL_IDENTIFIER,
+          },
+        },
+        {
+          universalIdentifier: '0763aca0-fdcb-4f74-8fc1-29342f0073ca',
+          title: 'Pages',
+          type: 'FIELD',
+          configuration: {
+            configurationType: 'FIELD',
+            fieldMetadataId: PAGES_ON_PROJECT_FIELD_UNIVERSAL_IDENTIFIER,
+            fieldDisplayMode: 'TABLE',
+            viewId: RECORD_PAGES_WIDGET_VIEW_UNIVERSAL_IDENTIFIER,
           },
         },
       ],
