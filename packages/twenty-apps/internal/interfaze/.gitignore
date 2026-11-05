@@ -16,6 +16,8 @@ generated
 
 # testing
 /coverage
+/e2e/.auth
+/e2e/.results
 
 # dev
 /dist/

@@ -1,6 +1,7 @@
 import {
   NavigationMenuItemType,
   STANDARD_PAGE_LAYOUT_UNIVERSAL_IDENTIFIERS,
+  ViewFilterOperand,
 } from 'twenty-sdk/define';
 import { describe, expect, it } from 'vitest';
 
@@ -12,9 +13,18 @@ import {
   PAGES_TREE_FRONT_COMPONENT_UNIVERSAL_IDENTIFIER,
   PROJECT_PAGES_ACTIONS_FRONT_COMPONENT_UNIVERSAL_IDENTIFIER,
 } from 'src/constants/universal-identifiers';
-import { PAGES_ON_COMPANY_FIELD_UNIVERSAL_IDENTIFIER } from 'src/fields/company-on-page.field';
-import { PAGES_ON_OPPORTUNITY_FIELD_UNIVERSAL_IDENTIFIER } from 'src/fields/opportunity-on-page.field';
-import { PAGES_ON_PROJECT_FIELD_UNIVERSAL_IDENTIFIER } from 'src/fields/project-on-page.field';
+import {
+  COMPANY_ON_PAGE_FIELD_UNIVERSAL_IDENTIFIER,
+  PAGES_ON_COMPANY_FIELD_UNIVERSAL_IDENTIFIER,
+} from 'src/fields/company-on-page.field';
+import {
+  OPPORTUNITY_ON_PAGE_FIELD_UNIVERSAL_IDENTIFIER,
+  PAGES_ON_OPPORTUNITY_FIELD_UNIVERSAL_IDENTIFIER,
+} from 'src/fields/opportunity-on-page.field';
+import {
+  PAGES_ON_PROJECT_FIELD_UNIVERSAL_IDENTIFIER,
+  PROJECT_ON_PAGE_FIELD_UNIVERSAL_IDENTIFIER,
+} from 'src/fields/project-on-page.field';
 import pagesNavigationMenuItem from 'src/navigation-menu-items/pages.navigation-menu-item';
 import { PAGE_CONTENT_FIELD_UNIVERSAL_IDENTIFIER } from 'src/objects/page.object';
 import companyPagesTab from 'src/page-layout-tabs/company-pages.page-layout-tab';
@@ -22,7 +32,15 @@ import opportunityPagesTab from 'src/page-layout-tabs/opportunity-pages.page-lay
 import pagePageLayout from 'src/page-layouts/page.page-layout';
 import pagesPageLayout from 'src/page-layouts/pages.page-layout';
 import projectPageLayout from 'src/page-layouts/project.page-layout';
-import { RECORD_PAGES_WIDGET_VIEW_UNIVERSAL_IDENTIFIER } from 'src/views/record-pages-widget.view';
+import companyPagesWidgetView, {
+  COMPANY_PAGES_WIDGET_VIEW_UNIVERSAL_IDENTIFIER,
+} from 'src/views/company-pages-widget.view';
+import opportunityPagesWidgetView, {
+  OPPORTUNITY_PAGES_WIDGET_VIEW_UNIVERSAL_IDENTIFIER,
+} from 'src/views/opportunity-pages-widget.view';
+import projectPagesWidgetView, {
+  PROJECT_PAGES_WIDGET_VIEW_UNIVERSAL_IDENTIFIER,
+} from 'src/views/project-pages-widget.view';
 
 const tabsOf = (layout: typeof projectPageLayout) =>
   layout.config.tabs?.map(({ title, position }) => [title, position]);
@@ -96,15 +114,15 @@ describe('Pages tabs on records', () => {
         configurationType: 'FIELD',
         fieldMetadataId: PAGES_ON_PROJECT_FIELD_UNIVERSAL_IDENTIFIER,
         fieldDisplayMode: 'TABLE',
-        viewId: RECORD_PAGES_WIDGET_VIEW_UNIVERSAL_IDENTIFIER,
+        viewId: PROJECT_PAGES_WIDGET_VIEW_UNIVERSAL_IDENTIFIER,
       },
     });
   });
 
   it.each([
-    [companyPagesTab, STANDARD_PAGE_LAYOUT_UNIVERSAL_IDENTIFIERS.companyRecordPage.universalIdentifier, COMPANY_PAGES_ACTIONS_FRONT_COMPONENT_UNIVERSAL_IDENTIFIER, PAGES_ON_COMPANY_FIELD_UNIVERSAL_IDENTIFIER],
-    [opportunityPagesTab, STANDARD_PAGE_LAYOUT_UNIVERSAL_IDENTIFIERS.opportunityRecordPage.universalIdentifier, OPPORTUNITY_PAGES_ACTIONS_FRONT_COMPONENT_UNIVERSAL_IDENTIFIER, PAGES_ON_OPPORTUNITY_FIELD_UNIVERSAL_IDENTIFIER],
-  ])('adds a Pages tab to standard record page %#', (tab, layoutId, actionsId, pagesFieldId) => {
+    [companyPagesTab, STANDARD_PAGE_LAYOUT_UNIVERSAL_IDENTIFIERS.companyRecordPage.universalIdentifier, COMPANY_PAGES_ACTIONS_FRONT_COMPONENT_UNIVERSAL_IDENTIFIER, PAGES_ON_COMPANY_FIELD_UNIVERSAL_IDENTIFIER, COMPANY_PAGES_WIDGET_VIEW_UNIVERSAL_IDENTIFIER],
+    [opportunityPagesTab, STANDARD_PAGE_LAYOUT_UNIVERSAL_IDENTIFIERS.opportunityRecordPage.universalIdentifier, OPPORTUNITY_PAGES_ACTIONS_FRONT_COMPONENT_UNIVERSAL_IDENTIFIER, PAGES_ON_OPPORTUNITY_FIELD_UNIVERSAL_IDENTIFIER, OPPORTUNITY_PAGES_WIDGET_VIEW_UNIVERSAL_IDENTIFIER],
+  ])('adds a Pages tab to standard record page %#', (tab, layoutId, actionsId, pagesFieldId, viewId) => {
     expect(tab.success).toBe(true);
     expect(tab.config).toMatchObject({
       pageLayoutUniversalIdentifier: layoutId,
@@ -117,8 +135,31 @@ describe('Pages tabs on records', () => {
         configurationType: 'FIELD',
         fieldMetadataId: pagesFieldId,
         fieldDisplayMode: 'TABLE',
-        viewId: RECORD_PAGES_WIDGET_VIEW_UNIVERSAL_IDENTIFIER,
+        viewId,
       },
     });
+  });
+});
+
+describe('Pages widget views', () => {
+  it.each([
+    ['project', projectPagesWidgetView, PROJECT_ON_PAGE_FIELD_UNIVERSAL_IDENTIFIER],
+    ['company', companyPagesWidgetView, COMPANY_ON_PAGE_FIELD_UNIVERSAL_IDENTIFIER],
+    ['opportunity', opportunityPagesWidgetView, OPPORTUNITY_ON_PAGE_FIELD_UNIVERSAL_IDENTIFIER],
+  ])('lists only the pages attached to the open %s', (_, definition, relationFieldId) => {
+    expect(definition.success).toBe(true);
+    expect(
+      definition.config.filters?.map(({ fieldMetadataUniversalIdentifier, operand, value }) => ({
+        fieldMetadataUniversalIdentifier,
+        operand,
+        value,
+      })),
+    ).toEqual([
+      {
+        fieldMetadataUniversalIdentifier: relationFieldId,
+        operand: ViewFilterOperand.IS,
+        value: JSON.stringify({ selectedRecordIds: [], isCurrentRecordSelected: true }),
+      },
+    ]);
   });
 });

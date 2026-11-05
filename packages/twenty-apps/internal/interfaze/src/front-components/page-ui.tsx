@@ -1,4 +1,5 @@
 import { CoreApiClient } from 'twenty-client-sdk/core';
+import { MetadataApiClient } from 'twenty-client-sdk/metadata';
 import {
   AppPath,
   enqueueSnackbar,
@@ -50,10 +51,41 @@ export const openPage = (pageId: string) =>
     objectRecordId: pageId,
   });
 
-export const openPagesHome = () =>
-  navigate(AppPath.PageLayoutPage, {
-    pageLayoutId: PAGES_PAGE_LAYOUT_UNIVERSAL_IDENTIFIER,
-  });
+let pagesLayoutId: string | null = null;
+
+// The page layout route takes the workspace id of the layout, not the
+// universal identifier the app declares, so it is looked up once.
+const resolvePagesLayoutId = async (): Promise<string | null> => {
+  if (pagesLayoutId === null) {
+    const response = await new MetadataApiClient().query({
+      getPageLayouts: {
+        __args: { pageLayoutType: 'STANDALONE_PAGE' },
+        id: true,
+        universalIdentifier: true,
+      },
+    });
+
+    pagesLayoutId =
+      response.getPageLayouts.find(
+        (layout) =>
+          layout.universalIdentifier === PAGES_PAGE_LAYOUT_UNIVERSAL_IDENTIFIER,
+      )?.id ?? null;
+  }
+
+  return pagesLayoutId;
+};
+
+export const openPagesHome = async () => {
+  const pageLayoutId = await resolvePagesLayoutId().catch(() => null);
+
+  if (pageLayoutId === null) {
+    await navigate(AppPath.RecordIndexPage, { objectNamePlural: 'pages' });
+
+    return;
+  }
+
+  await navigate(AppPath.PageLayoutPage, { pageLayoutId });
+};
 
 export const notifyError = (message: string) =>
   enqueueSnackbar({ message, variant: 'error' });

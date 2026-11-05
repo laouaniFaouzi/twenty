@@ -8,8 +8,14 @@ import { describe, expect, it } from 'vitest';
 
 import { OPPORTUNITY_INTERFAZE_STAGE_FIELD_UNIVERSAL_IDENTIFIER } from 'src/fields/opportunity-interfaze-stage.field';
 import { OPPORTUNITY_RECEIVED_AT_FIELD_UNIVERSAL_IDENTIFIER } from 'src/fields/opportunity-received-at.field';
-import { MAINTENANCE_CONTRACTS_ON_PROJECT_FIELD_UNIVERSAL_IDENTIFIER } from 'src/fields/project-on-maintenance-contract.field';
-import { TRACKER_TASKS_ON_PROJECT_FIELD_UNIVERSAL_IDENTIFIER } from 'src/fields/project-on-project-task.field';
+import {
+  MAINTENANCE_CONTRACTS_ON_PROJECT_FIELD_UNIVERSAL_IDENTIFIER,
+  PROJECT_ON_MAINTENANCE_CONTRACT_FIELD_UNIVERSAL_IDENTIFIER,
+} from 'src/fields/project-on-maintenance-contract.field';
+import {
+  PROJECT_ON_PROJECT_TASK_FIELD_UNIVERSAL_IDENTIFIER,
+  TRACKER_TASKS_ON_PROJECT_FIELD_UNIVERSAL_IDENTIFIER,
+} from 'src/fields/project-on-project-task.field';
 import maintenanceNavigationMenuItem from 'src/navigation-menu-items/maintenance.navigation-menu-item';
 import pipelineNavigationMenuItem from 'src/navigation-menu-items/pipeline.navigation-menu-item';
 import projectTasksNavigationMenuItem from 'src/navigation-menu-items/project-tasks.navigation-menu-item';
@@ -124,6 +130,32 @@ describe('Interfaze views', () => {
     expect(filtersOf(maintenanceContractRenewalView)).toEqual([
       { operand: ViewFilterOperand.IS, value: ['ACTIVE'] },
       { operand: ViewFilterOperand.IS_RELATIVE, value: 'NEXT_30_DAY' },
+    ]);
+  });
+});
+
+const CURRENT_RECORD_FILTER_VALUE = JSON.stringify({
+  selectedRecordIds: [],
+  isCurrentRecordSelected: true,
+});
+
+describe('Record widget views', () => {
+  it.each([
+    ['tracker tasks', projectTrackerTasksWidgetView, PROJECT_ON_PROJECT_TASK_FIELD_UNIVERSAL_IDENTIFIER],
+    ['contracts', projectContractsWidgetView, PROJECT_ON_MAINTENANCE_CONTRACT_FIELD_UNIVERSAL_IDENTIFIER],
+  ])('scopes the %s widget to the open project', (_, definition, relationFieldId) => {
+    expect(
+      definition.config.filters?.map(({ fieldMetadataUniversalIdentifier, operand, value }) => ({
+        fieldMetadataUniversalIdentifier,
+        operand,
+        value,
+      })),
+    ).toEqual([
+      {
+        fieldMetadataUniversalIdentifier: relationFieldId,
+        operand: ViewFilterOperand.IS,
+        value: CURRENT_RECORD_FILTER_VALUE,
+      },
     ]);
   });
 });

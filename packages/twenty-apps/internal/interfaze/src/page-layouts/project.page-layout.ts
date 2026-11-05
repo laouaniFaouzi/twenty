@@ -8,7 +8,7 @@ import { PROJECT_UNIVERSAL_IDENTIFIER } from 'src/objects/project.object';
 import { PROJECT_CONTRACTS_WIDGET_VIEW_UNIVERSAL_IDENTIFIER } from 'src/views/project-contracts-widget.view';
 import { PROJECT_RECORD_PAGE_FIELDS_VIEW_UNIVERSAL_IDENTIFIER } from 'src/views/project-record-page-fields.view';
 import { PROJECT_TRACKER_TASKS_WIDGET_VIEW_UNIVERSAL_IDENTIFIER } from 'src/views/project-tracker-tasks-widget.view';
-import { RECORD_PAGES_WIDGET_VIEW_UNIVERSAL_IDENTIFIER } from 'src/views/record-pages-widget.view';
+import { PROJECT_PAGES_WIDGET_VIEW_UNIVERSAL_IDENTIFIER } from 'src/views/project-pages-widget.view';
 
 export const PROJECT_PAGE_LAYOUT_UNIVERSAL_IDENTIFIER = 'ec1a0927-bec7-4c8b-9477-2d3ca6ff4dfe';
 
@@ -102,7 +102,7 @@ export default definePageLayout({
             configurationType: 'FIELD',
             fieldMetadataId: PAGES_ON_PROJECT_FIELD_UNIVERSAL_IDENTIFIER,
             fieldDisplayMode: 'TABLE',
-            viewId: RECORD_PAGES_WIDGET_VIEW_UNIVERSAL_IDENTIFIER,
+            viewId: PROJECT_PAGES_WIDGET_VIEW_UNIVERSAL_IDENTIFIER,
           },
         },
       ],

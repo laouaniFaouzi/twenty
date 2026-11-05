@@ -6,7 +6,7 @@ import {
 
 import { OPPORTUNITY_PAGES_ACTIONS_FRONT_COMPONENT_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
 import { PAGES_ON_OPPORTUNITY_FIELD_UNIVERSAL_IDENTIFIER } from 'src/fields/opportunity-on-page.field';
-import { RECORD_PAGES_WIDGET_VIEW_UNIVERSAL_IDENTIFIER } from 'src/views/record-pages-widget.view';
+import { OPPORTUNITY_PAGES_WIDGET_VIEW_UNIVERSAL_IDENTIFIER } from 'src/views/opportunity-pages-widget.view';
 
 // Added to the standard record page without replacing its own tabs.
 export default definePageLayoutTab({
@@ -35,7 +35,7 @@ export default definePageLayoutTab({
         configurationType: 'FIELD',
         fieldMetadataId: PAGES_ON_OPPORTUNITY_FIELD_UNIVERSAL_IDENTIFIER,
         fieldDisplayMode: 'TABLE',
-        viewId: RECORD_PAGES_WIDGET_VIEW_UNIVERSAL_IDENTIFIER,
+        viewId: OPPORTUNITY_PAGES_WIDGET_VIEW_UNIVERSAL_IDENTIFIER,
       },
     },
   ],
