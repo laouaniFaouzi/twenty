@@ -2,7 +2,10 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
+import { MetadataApiClient } from 'twenty-client-sdk/metadata';
 import { appDevOnce, appUninstall } from 'twenty-sdk/cli';
+
+import { APPLICATION_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
 
 const APP_PATH = process.cwd();
 const CONFIG_DIR = path.join(os.homedir(), '.twenty');
@@ -73,6 +76,37 @@ export async function setup() {
     throw new Error(
       `Dev sync failed: ${result.error?.message ?? 'Unknown error'}`,
     );
+  }
+
+  await setSiteSyncVariables();
+}
+
+// The site leads test only runs against a site database; without one the app keeps empty variables.
+async function setSiteSyncVariables() {
+  if (!process.env.SUPABASE_URL) {
+    return;
+  }
+
+  const variables: Record<string, string> = {
+    SUPABASE_URL: process.env.SUPABASE_URL,
+    SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY ?? '',
+    HUBFAZE_WEBHOOK_SECRET: process.env.HUBFAZE_WEBHOOK_SECRET ?? '',
+    LEAD_OWNER_EMAIL: process.env.LEAD_OWNER_EMAIL ?? 'tim@apple.dev',
+  };
+  const metadataClient = new MetadataApiClient();
+  const { findOneApplication } = await metadataClient.query({
+    findOneApplication: {
+      __args: { universalIdentifier: APPLICATION_UNIVERSAL_IDENTIFIER },
+      id: true,
+    },
+  });
+
+  for (const [key, value] of Object.entries(variables)) {
+    await metadataClient.mutation({
+      updateOneApplicationVariable: {
+        __args: { key, value, applicationId: findOneApplication.id },
+      },
+    });
   }
 }
 
