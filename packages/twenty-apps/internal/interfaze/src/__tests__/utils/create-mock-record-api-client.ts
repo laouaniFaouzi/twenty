@@ -22,3 +22,31 @@ export const mutationArgs = (
 export const connection = <TNode>(nodes: TNode[]) => ({
   edges: nodes.map((node) => ({ node })),
 });
+
+type QuerySelection = { __args?: { filter?: Record<string, unknown> } };
+
+export type QueryAnswers = Partial<
+  Record<string, (filter: Record<string, unknown>) => unknown[]>
+>;
+
+// Answers every root of a query with the nodes its answer returns for that root's filter.
+export const answerQueries = (
+  client: MockRecordApiClient,
+  answers: QueryAnswers,
+) => {
+  client.query.mockImplementation(
+    async (request: Record<string, QuerySelection>) =>
+      Object.fromEntries(
+        Object.entries(request).map(([root, selection]) => [
+          root,
+          connection(answers[root]?.(selection.__args?.filter ?? {}) ?? []),
+        ]),
+      ),
+  );
+};
+
+export const queryFilters = (client: MockRecordApiClient, root: string) =>
+  client.query.mock.calls
+    .map(([request]) => (request as Record<string, QuerySelection>)[root])
+    .filter(Boolean)
+    .map((selection) => selection.__args?.filter);

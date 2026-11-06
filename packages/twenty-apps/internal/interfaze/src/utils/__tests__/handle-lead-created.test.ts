@@ -1,11 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  answerQueries,
   connection,
   createMockRecordApiClient,
   type MockRecordApiClient,
   mutationArgs,
   mutationNames,
+  type QueryAnswers,
+  queryFilters as sharedQueryFilters,
 } from 'src/__tests__/utils/create-mock-record-api-client';
 import {
   findMemberIdByEmail,
@@ -41,11 +44,6 @@ const LEAD: SiteLead = {
   created_at: '2026-11-06T09:00:00.000Z',
 };
 
-type Selection = { __args?: { filter?: Record<string, unknown> } };
-type Answers = Partial<
-  Record<string, (filter: Record<string, unknown>) => unknown[]>
->;
-
 const CREATED_IDS: Record<string, string> = {
   createCompany: 'C-new',
   createPerson: 'P-new',
@@ -57,22 +55,9 @@ const CREATED_IDS: Record<string, string> = {
 let client: MockRecordApiClient;
 let patchLead: ReturnType<typeof vi.fn<typeof patchSiteLead>>;
 
-const answer = (answers: Answers) => {
-  client.query.mockImplementation(async (request: Record<string, Selection>) =>
-    Object.fromEntries(
-      Object.entries(request).map(([root, selection]) => [
-        root,
-        connection(answers[root]?.(selection.__args?.filter ?? {}) ?? []),
-      ]),
-    ),
-  );
-};
+const answer = (answers: QueryAnswers) => answerQueries(client, answers);
 
-const queryFilters = (root: string) =>
-  client.query.mock.calls
-    .map(([request]) => (request as Record<string, Selection>)[root])
-    .filter(Boolean)
-    .map((selection) => selection.__args?.filter);
+const queryFilters = (root: string) => sharedQueryFilters(client, root);
 
 const ownerAnswer = { workspaceMembers: () => [{ id: 'M1' }] };
 
