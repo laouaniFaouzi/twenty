@@ -4,6 +4,7 @@ import {
 } from 'twenty-sdk/define';
 
 import { DEFAULT_ROLE_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
+import { MAINTENANCE_CONTRACT_UNIVERSAL_IDENTIFIER } from 'src/objects/maintenance-contract.object';
 import { PAGE_UNIVERSAL_IDENTIFIER } from 'src/objects/page.object';
 import { PROJECT_UNIVERSAL_IDENTIFIER } from 'src/objects/project.object';
 import { PROJECT_PHASE_UNIVERSAL_IDENTIFIER } from 'src/objects/project-phase.object';
@@ -12,6 +13,13 @@ import { PROJECT_TASK_UNIVERSAL_IDENTIFIER } from 'src/objects/project-task.obje
 const READ_AND_UPDATE = {
   canReadObjectRecords: true,
   canUpdateObjectRecords: true,
+  canSoftDeleteObjectRecords: false,
+  canDestroyObjectRecords: false,
+};
+
+const READ_ONLY = {
+  canReadObjectRecords: true,
+  canUpdateObjectRecords: false,
   canSoftDeleteObjectRecords: false,
   canDestroyObjectRecords: false,
 };
@@ -31,10 +39,9 @@ export default defineApplicationRole({
   canBeAssignedToApiKeys: false,
   objectPermissions: [
     ...[
-      STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.opportunity.universalIdentifier,
-      STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.company.universalIdentifier,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.task.universalIdentifier,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.taskTarget.universalIdentifier,
+      STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.noteTarget.universalIdentifier,
       PROJECT_UNIVERSAL_IDENTIFIER,
       PROJECT_PHASE_UNIVERSAL_IDENTIFIER,
       PAGE_UNIVERSAL_IDENTIFIER,
@@ -42,19 +49,24 @@ export default defineApplicationRole({
       objectUniversalIdentifier,
       ...READ_AND_UPDATE,
     })),
-    {
-      objectUniversalIdentifier: PROJECT_TASK_UNIVERSAL_IDENTIFIER,
+    // Soft delete serves the trash cascade of tracker phases and the three-year purge of site leads.
+    ...[
+      PROJECT_TASK_UNIVERSAL_IDENTIFIER,
+      STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.opportunity.universalIdentifier,
+      STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.person.universalIdentifier,
+      STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.company.universalIdentifier,
+      STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.note.universalIdentifier,
+    ].map((objectUniversalIdentifier) => ({
+      objectUniversalIdentifier,
       ...READ_AND_UPDATE,
       canSoftDeleteObjectRecords: true,
-    },
-    {
-      objectUniversalIdentifier:
-        STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.workspaceMember
-          .universalIdentifier,
-      canReadObjectRecords: true,
-      canUpdateObjectRecords: false,
-      canSoftDeleteObjectRecords: false,
-      canDestroyObjectRecords: false,
-    },
+    })),
+    ...[
+      STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.workspaceMember.universalIdentifier,
+      MAINTENANCE_CONTRACT_UNIVERSAL_IDENTIFIER,
+    ].map((objectUniversalIdentifier) => ({
+      objectUniversalIdentifier,
+      ...READ_ONLY,
+    })),
   ],
 });
