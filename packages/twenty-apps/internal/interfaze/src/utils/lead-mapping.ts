@@ -1,8 +1,14 @@
 import { OFFER_LABELS, type Offer } from 'src/constants/offer';
 import { type InterfazeStage } from 'src/fields/opportunity-interfaze-stage.field';
 import { type Need } from 'src/fields/opportunity-need.field';
-import { type RequestSource } from 'src/fields/opportunity-request-source.field';
-import { type Timing } from 'src/fields/opportunity-timing.field';
+import {
+  REQUEST_SOURCE_OPTIONS,
+  type RequestSource,
+} from 'src/fields/opportunity-request-source.field';
+import {
+  TIMING_OPTIONS,
+  type Timing,
+} from 'src/fields/opportunity-timing.field';
 import { type SiteLeadStatus } from 'src/utils/supabase-leads';
 
 export type SiteLead = {
@@ -129,14 +135,16 @@ export const normalizeFrenchPhone = (
 export const normalizeCompanyName = (name: string): string =>
   name
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/\p{Mn}/gu, '')
     .toLowerCase()
     .trim()
     .replace(/\s+/g, ' ');
 
+export const escapeLikeWildcards = (value: string): string =>
+  value.replace(/[\\%_]/g, (wildcard) => `\\${wildcard}`);
+
 export const companyNameLikePattern = (name: string): string =>
-  normalizeCompanyName(name)
-    .replace(/[\\%_]/g, (wildcard) => `\\${wildcard}`)
+  escapeLikeWildcards(normalizeCompanyName(name))
     .replace(/[aceinouy]/g, '_')
     .replace(/ /g, '%');
 
@@ -203,4 +211,36 @@ export const stageAfterSiteStatus = ({
         : null,
     askToClose: false,
   };
+};
+
+const labelOf = (
+  options: { value: string; label: string }[],
+  value: string | null,
+): string | null =>
+  options.find((option) => option.value === value)?.label ?? null;
+
+export const buildLeadNoteMarkdown = (lead: SiteLead): string => {
+  const need = lookUp(NEED_BY_SITE_VALUE, lead.need);
+  const details: [string, string | null][] = [
+    ['Référence', lead.ref],
+    ['Besoin', need === null ? null : NEED_LABELS[need]],
+    [
+      'Source',
+      labelOf(
+        REQUEST_SOURCE_OPTIONS,
+        lookUp(REQUEST_SOURCE_BY_SITE_VALUE, lead.source),
+      ),
+    ],
+    [
+      'Délai',
+      labelOf(TIMING_OPTIONS, lookUp(TIMING_BY_SITE_VALUE, lead.timing)),
+    ],
+    ['Téléphone', lead.phone?.trim() || null],
+    ['Message', lead.message?.trim() || null],
+  ];
+
+  return details
+    .filter((detail): detail is [string, string] => detail[1] !== null)
+    .map(([label, value]) => `${label} : ${value}`)
+    .join('\n\n');
 };

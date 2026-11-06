@@ -21,7 +21,10 @@ let client: MockRecordApiClient;
 const givenLinkedTasks = (tasks: { title: string; status: string }[]) => {
   client.query.mockResolvedValueOnce({
     taskTargets: connection(
-      tasks.map((task, index) => ({ id: `target-${index}`, task: { id: `task-${index}`, ...task } })),
+      tasks.map((task, index) => ({
+        id: `target-${index}`,
+        task: { id: `task-${index}`, ...task },
+      })),
     ),
   });
 };
@@ -58,14 +61,18 @@ describe('createInternalTask', () => {
   });
 
   it('does not duplicate an unfinished task with the same title on the same record', async () => {
-    givenLinkedTasks([{ title: "Choisir l'offre de Refonte du site", status: 'IN_PROGRESS' }]);
+    givenLinkedTasks([
+      { title: "Choisir l'offre de Refonte du site", status: 'IN_PROGRESS' },
+    ]);
 
     expect(await createInternalTask(client, INPUT)).toEqual({ created: false });
     expect(client.mutation).not.toHaveBeenCalled();
   });
 
   it('creates the task again when the previous one is done', async () => {
-    givenLinkedTasks([{ title: "Choisir l'offre de Refonte du site", status: 'DONE' }]);
+    givenLinkedTasks([
+      { title: "Choisir l'offre de Refonte du site", status: 'DONE' },
+    ]);
 
     expect(await createInternalTask(client, INPUT)).toEqual({ created: true });
   });
@@ -80,6 +87,21 @@ describe('createInternalTask', () => {
 
     expect(mutationArgs(client, 'createTaskTarget')).toEqual([
       { data: { taskId: 'task-new', targetCompanyId: 'company-1' } },
+    ]);
+  });
+
+  it('links the task to extra records after its first target, still checking duplicates on the first one only', async () => {
+    givenLinkedTasks([]);
+
+    await createInternalTask(client, {
+      ...INPUT,
+      extraTargets: [{ objectName: 'person', recordId: 'person-1' }],
+    });
+
+    expect(client.query).toHaveBeenCalledTimes(1);
+    expect(mutationArgs(client, 'createTaskTarget')).toEqual([
+      { data: { taskId: 'task-new', targetOpportunityId: 'opportunity-1' } },
+      { data: { taskId: 'task-new', targetPersonId: 'person-1' } },
     ]);
   });
 });
