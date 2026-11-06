@@ -59,6 +59,8 @@ const answer = (answers: QueryAnswers) => answerQueries(client, answers);
 
 const queryFilters = (root: string) => sharedQueryFilters(client, root);
 
+const REPLY_TITLE = 'Répondre à Marie Curie · IFZ-261106-0042';
+
 const ownerAnswer = { workspaceMembers: () => [{ id: 'M1' }] };
 
 const run = (lead: SiteLead = LEAD) =>
@@ -95,6 +97,7 @@ describe('handleLeadCreated', () => {
     ]);
     expect(mutationArgs(client, 'createPerson')).toEqual([
       {
+        upsert: true,
         data: {
           name: { firstName: 'Marie', lastName: 'Curie' },
           emails: { primaryEmail: 'marie@exemple.fr' },
@@ -317,11 +320,14 @@ describe('handleLeadCreated', () => {
     });
   });
 
-  it('does nothing for a lead already turned into an opportunity', async () => {
+  it('does nothing for a lead already turned into an opportunity, even once its reply task is done', async () => {
     answer({
       ...ownerAnswer,
       opportunities: (filter) =>
-        'siteLeadId' in filter ? [{ id: 'O-old' }] : [],
+        'siteLeadId' in filter ? [{ id: 'O-old', pointOfContactId: 'P1' }] : [],
+      taskTargets: () => [
+        { id: 'TT1', task: { id: 'T1', title: REPLY_TITLE, status: 'DONE' } },
+      ],
     });
 
     expect(await run({ ...LEAD, crm_id: 'O-old' })).toEqual({
@@ -335,10 +341,37 @@ describe('handleLeadCreated', () => {
     expect(patchLead).not.toHaveBeenCalled();
   });
 
+  it('finishes a replayed lead whose run stopped before the reply task', async () => {
+    answer({
+      ...ownerAnswer,
+      opportunities: (filter) =>
+        'siteLeadId' in filter ? [{ id: 'O-old', pointOfContactId: 'P1' }] : [],
+    });
+
+    expect(await run({ ...LEAD, crm_id: 'O-old' })).toMatchObject({
+      outcome: 'duplicate',
+    });
+    expect(mutationNames(client)).toEqual([
+      'createTask',
+      'createTaskTarget',
+      'createTaskTarget',
+    ]);
+    expect(mutationArgs(client, 'createTask')[0]).toMatchObject({
+      data: { title: REPLY_TITLE, assigneeId: 'M1' },
+    });
+    expect(mutationArgs(client, 'createTaskTarget')).toEqual([
+      { data: { taskId: 'T-new', targetOpportunityId: 'O-old' } },
+      { data: { taskId: 'T-new', targetPersonId: 'P1' } },
+    ]);
+  });
+
   it('links the lead again when a replay finds it without its opportunity', async () => {
     answer({
       opportunities: (filter) =>
-        'siteLeadId' in filter ? [{ id: 'O-old' }] : [],
+        'siteLeadId' in filter ? [{ id: 'O-old', pointOfContactId: 'P1' }] : [],
+      taskTargets: () => [
+        { id: 'TT1', task: { id: 'T1', title: REPLY_TITLE, status: 'TODO' } },
+      ],
     });
 
     await run();
@@ -355,6 +388,9 @@ describe('handleLeadCreated', () => {
           noteTargets: connection([{ id: 'NT1', targetOpportunityId: 'O7' }]),
         },
       ],
+      taskTargets: () => [
+        { id: 'TT1', task: { id: 'T1', title: REPLY_TITLE, status: 'DONE' } },
+      ],
     });
 
     expect(await run()).toEqual({ outcome: 'duplicate', opportunityId: 'O7' });
@@ -363,6 +399,64 @@ describe('handleLeadCreated', () => {
     ]);
     expect(client.mutation).not.toHaveBeenCalled();
     expect(patchLead).not.toHaveBeenCalled();
+  });
+
+  it('attaches a replayed note that lost its opportunity instead of writing it twice', async () => {
+    answer({
+      ...ownerAnswer,
+      notes: () => [{ id: 'N1', noteTargets: connection([]) }],
+      people: () => [
+        {
+          id: 'P1',
+          companyId: 'C1',
+          company: { id: 'C1', name: 'Boulangerie Martin' },
+        },
+      ],
+      companies: () => [{ id: 'C1', name: 'Boulangerie Martin' }],
+      opportunities: (filter) =>
+        'pointOfContactId' in filter ? [{ id: 'O7' }] : [],
+    });
+
+    expect(await run()).toEqual({ outcome: 'noted', opportunityId: 'O7' });
+    expect(mutationNames(client)).toEqual([
+      'createNoteTarget',
+      'createTask',
+      'createTaskTarget',
+      'createTaskTarget',
+    ]);
+    expect(mutationArgs(client, 'createNoteTarget')).toEqual([
+      { data: { noteId: 'N1', targetOpportunityId: 'O7' } },
+    ]);
+  });
+
+  it('writes the visitor message as plain text, never as markdown the note would render', async () => {
+    answer({
+      people: () => [{ id: 'P1', companyId: null, company: null }],
+      opportunities: (filter) =>
+        'pointOfContactId' in filter ? [{ id: 'O7' }] : [],
+    });
+
+    await run({
+      ...LEAD,
+      company: null,
+      timing: null,
+      phone: '<b>06</b>',
+      message: '![suivi](https://pixel.test/p.png) **urgent**',
+    });
+
+    expect(mutationArgs(client, 'createNote')[0]).toMatchObject({
+      data: {
+        bodyV2: {
+          markdown: [
+            'Référence : IFZ-261106-0042',
+            'Besoin : WebFaze',
+            'Source : Page WebFaze',
+            'Téléphone : \\<b\\>06\\</b\\>',
+            'Message : \\!\\[suivi\\]\\(https://pixel\\.test/p\\.png\\) \\*\\*urgent\\*\\*',
+          ].join('\n\n'),
+        },
+      },
+    });
   });
 
   it('creates the opportunity and the task without an owner when the lead owner is unknown', async () => {

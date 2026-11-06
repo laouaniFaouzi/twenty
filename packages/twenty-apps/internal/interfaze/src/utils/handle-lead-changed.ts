@@ -1,6 +1,6 @@
 import { type InterfazeStage } from 'src/fields/opportunity-interfaze-stage.field';
 import { createInternalTask } from 'src/utils/create-internal-task';
-import { leadNoteTitle } from 'src/utils/handle-lead-created';
+import { leadNoteTitle, replyTaskTitle } from 'src/utils/handle-lead-created';
 import { type SiteLead, stageAfterSiteStatus } from 'src/utils/lead-mapping';
 import {
   getEdgeNodes,
@@ -98,22 +98,61 @@ export const handleLeadUpdated = async (
   }
 };
 
-const hasAnyRecord = async (
-  client: RecordApiClient,
-  roots: string[],
-  filter: Record<string, unknown>,
-): Promise<boolean> => {
-  const response = await client.query(
-    Object.fromEntries(
-      roots.map((root) => [
-        root,
-        { __args: { filter, first: 1 }, edges: { node: { id: true } } },
-      ]),
-    ),
-  );
+const CLIENT_STATUSES = ['CLIENT', 'FORMER_CLIENT'];
 
-  return roots.some((root) => getEdgeNodes(response, root).length > 0);
+const firstRecords = (filter: Record<string, unknown>) => ({
+  __args: { filter, first: 1 },
+  edges: { node: { id: true } },
+});
+
+const hasOtherOpportunity = async (client: RecordApiClient, personId: string) =>
+  getEdgeNodes(
+    await client.query({
+      opportunities: firstRecords({ pointOfContactId: { eq: personId } }),
+    }),
+    'opportunities',
+  ).length > 0;
+
+// A client relationship (spec §5.3, §13) keeps the company and its contacts beyond the lead purge.
+const readCompanyLinks = async (client: RecordApiClient, companyId: string) => {
+  const byCompany = { companyId: { eq: companyId } };
+  const response = await client.query({
+    companies: {
+      __args: { filter: { id: { eq: companyId } }, first: 1 },
+      edges: { node: { id: true, clientStatus: true } },
+    },
+    projects: firstRecords(byCompany),
+    maintenanceContracts: firstRecords(byCompany),
+    opportunities: firstRecords(byCompany),
+    people: firstRecords(byCompany),
+  });
+  const hasAny = (root: string) => getEdgeNodes(response, root).length > 0;
+  const clientStatus =
+    getEdgeNodes<{ clientStatus: string | null }>(response, 'companies')[0]
+      ?.clientStatus ?? null;
+
+  return {
+    isClient:
+      CLIENT_STATUSES.includes(clientStatus ?? '') ||
+      hasAny('projects') ||
+      hasAny('maintenanceContracts'),
+    hasOpportunitiesOrPeople: hasAny('opportunities') || hasAny('people'),
+  };
 };
+
+const findPersonCompanyId = async (
+  client: RecordApiClient,
+  personId: string,
+): Promise<string | null> =>
+  getEdgeNodes<{ companyId: string | null }>(
+    await client.query({
+      people: {
+        __args: { filter: { id: { eq: personId } }, first: 1 },
+        edges: { node: { id: true, companyId: true } },
+      },
+    }),
+    'people',
+  )[0]?.companyId ?? null;
 
 const deleteRecord = async (
   client: RecordApiClient,
@@ -123,18 +162,38 @@ const deleteRecord = async (
   await client.mutation({ [mutationName]: { __args: { id }, id: true } });
 };
 
-const deleteLeadNotes = async (client: RecordApiClient, lead: SiteLead) => {
+const deleteRecordsByTitle = async (
+  client: RecordApiClient,
+  {
+    root,
+    mutationName,
+    titles,
+  }: { root: 'notes' | 'tasks'; mutationName: string; titles: string[] },
+) => {
   const response = await client.query({
-    notes: {
-      __args: { filter: { title: { eq: leadNoteTitle(lead.ref) } }, first: 10 },
+    [root]: {
+      __args: {
+        filter: {
+          title: titles.length === 1 ? { eq: titles[0] } : { in: titles },
+        },
+        first: 20,
+      },
       edges: { node: { id: true } },
     },
   });
 
-  for (const note of getEdgeNodes<{ id: string }>(response, 'notes')) {
-    await deleteRecord(client, 'deleteNote', note.id);
+  for (const { id } of getEdgeNodes<{ id: string }>(response, root)) {
+    await deleteRecord(client, mutationName, id);
   }
 };
+
+// The purge keeps a privacy promise: the app's own tasks carry the prospect's name.
+const deleteLeadTasks = (client: RecordApiClient, lead: SiteLead) =>
+  deleteRecordsByTitle(client, {
+    root: 'tasks',
+    mutationName: 'deleteTask',
+    titles: [replyTaskTitle(lead), closeOnSiteTaskTitle(lead.ref)],
+  });
 
 export const handleLeadDeleted = async (
   client: RecordApiClient,
@@ -143,7 +202,12 @@ export const handleLeadDeleted = async (
   const opportunity = await findLeadOpportunity(client, lead);
 
   if (opportunity === null || opportunity.siteLeadId !== lead.id) {
-    await deleteLeadNotes(client, lead);
+    await deleteRecordsByTitle(client, {
+      root: 'notes',
+      mutationName: 'deleteNote',
+      titles: [leadNoteTitle(lead.ref)],
+    });
+    await deleteLeadTasks(client, lead);
 
     return;
   }
@@ -154,26 +218,26 @@ export const handleLeadDeleted = async (
   }
 
   await deleteRecord(client, 'deleteOpportunity', opportunity.id);
+  await deleteLeadTasks(client, lead);
 
   const { pointOfContactId: personId, companyId } = opportunity;
 
-  if (
-    personId !== null &&
-    !(await hasAnyRecord(client, ['opportunities'], {
-      pointOfContactId: { eq: personId },
-    }))
-  ) {
-    await deleteRecord(client, 'deletePerson', personId);
+  if (personId !== null) {
+    const personCompanyId = await findPersonCompanyId(client, personId);
+    const isClientContact =
+      personCompanyId !== null &&
+      (await readCompanyLinks(client, personCompanyId)).isClient;
+
+    if (!isClientContact && !(await hasOtherOpportunity(client, personId))) {
+      await deleteRecord(client, 'deletePerson', personId);
+    }
   }
 
-  if (
-    companyId !== null &&
-    !(await hasAnyRecord(
-      client,
-      ['opportunities', 'projects', 'maintenanceContracts', 'people'],
-      { companyId: { eq: companyId } },
-    ))
-  ) {
-    await deleteRecord(client, 'deleteCompany', companyId);
+  if (companyId !== null) {
+    const links = await readCompanyLinks(client, companyId);
+
+    if (!links.isClient && !links.hasOpportunitiesOrPeople) {
+      await deleteRecord(client, 'deleteCompany', companyId);
+    }
   }
 };

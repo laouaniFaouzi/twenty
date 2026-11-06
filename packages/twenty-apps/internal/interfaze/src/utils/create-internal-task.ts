@@ -14,6 +14,7 @@ export type InternalTaskInput = {
   dueAt: string | null;
   target: InternalTaskTarget;
   extraTargets?: InternalTaskTarget[];
+  duplicateCheck?: 'unfinished' | 'any';
 };
 
 type LinkedTask = {
@@ -29,7 +30,14 @@ const TARGET_FIELD_BY_OBJECT: Record<InternalTaskTarget['objectName'], string> =
 
 export const createInternalTask = async (
   client: RecordApiClient,
-  { title, assigneeId, dueAt, target, extraTargets = [] }: InternalTaskInput,
+  {
+    title,
+    assigneeId,
+    dueAt,
+    target,
+    extraTargets = [],
+    duplicateCheck = 'unfinished',
+  }: InternalTaskInput,
 ): Promise<{ created: boolean }> => {
   const targetField = TARGET_FIELD_BY_OBJECT[target.objectName];
 
@@ -46,7 +54,9 @@ export const createInternalTask = async (
   });
 
   const hasOpenTwin = getEdgeNodes<LinkedTask>(response, 'taskTargets').some(
-    ({ task }) => task?.title === title && task.status !== 'DONE',
+    ({ task }) =>
+      task?.title === title &&
+      (duplicateCheck === 'any' || task.status !== 'DONE'),
   );
 
   if (hasOpenTwin) {

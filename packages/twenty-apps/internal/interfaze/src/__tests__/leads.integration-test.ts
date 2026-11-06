@@ -245,6 +245,103 @@ describe.skipIf(!SUPABASE_URL)('site leads', () => {
     expect((await readLead()).status).toBe('done');
   });
 
+  it('brings back a person from the trash when they send a new lead', async () => {
+    const email = `revenant.${randomDigits(6)}@exemple.fr`;
+    const { createPerson } = await client.mutation({
+      createPerson: {
+        __args: {
+          data: {
+            name: { firstName: 'Revenant', lastName: '[test-interfaze]' },
+            emails: { primaryEmail: email },
+          },
+        },
+        id: true,
+      },
+    });
+    const trashedPersonId = (createPerson as { id: string }).id;
+
+    await client.mutation({
+      deletePerson: { __args: { id: trashedPersonId }, id: true },
+    });
+
+    const [secondLead] = await siteRest('POST', '', {
+      ref: `IFZ-261106-${randomDigits(4)}`,
+      source: 'contact',
+      need: 'probleme',
+      name: '[test-interfaze] Revenant',
+      email,
+    });
+
+    let revivedOpportunityId: string | undefined;
+
+    try {
+      const revived = await waitFor(async () => {
+        const [found] = getEdgeNodes<{
+          id: string;
+          pointOfContactId: string | null;
+        }>(
+          await client.query({
+            opportunities: {
+              __args: {
+                filter: { siteLeadId: { eq: secondLead.id } },
+                first: 1,
+              },
+              edges: { node: { id: true, pointOfContactId: true } },
+            },
+          }),
+          'opportunities',
+        );
+
+        return found;
+      });
+
+      revivedOpportunityId = revived.id;
+      expect(revived.pointOfContactId).toBe(trashedPersonId);
+
+      const { person } = await client.query({
+        person: {
+          __args: { filter: { id: { eq: trashedPersonId } } },
+          id: true,
+          deletedAt: true,
+        },
+      });
+
+      expect(person).toEqual({ id: trashedPersonId, deletedAt: null });
+
+      await siteRest('DELETE', `?id=eq.${secondLead.id}`);
+      await waitFor(async () => {
+        const [stillThere] = getEdgeNodes(
+          await client.query({
+            opportunities: {
+              __args: {
+                filter: { siteLeadId: { eq: secondLead.id } },
+                first: 1,
+              },
+              edges: { node: { id: true } },
+            },
+          }),
+          'opportunities',
+        );
+
+        return stillThere === undefined ? true : undefined;
+      });
+    } finally {
+      await siteRest('DELETE', `?id=eq.${secondLead.id}`).catch(
+        () => undefined,
+      );
+      for (const [mutationName, id] of [
+        ['destroyOpportunity', revivedOpportunityId],
+        ['destroyPerson', trashedPersonId],
+      ] as const) {
+        if (id !== undefined) {
+          await client
+            .mutation({ [mutationName]: { __args: { id }, id: true } })
+            .catch(() => undefined);
+        }
+      }
+    }
+  });
+
   it('refuses a call to the route without the shared secret', async () => {
     const response = await fetch(
       `${process.env.TWENTY_API_URL}/s/hubfaze/site-webhook`,

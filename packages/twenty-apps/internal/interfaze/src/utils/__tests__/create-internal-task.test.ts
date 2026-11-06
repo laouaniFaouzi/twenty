@@ -104,4 +104,15 @@ describe('createInternalTask', () => {
       { data: { taskId: 'task-new', targetPersonId: 'person-1' } },
     ]);
   });
+
+  it('can also refuse a twin that is already done', async () => {
+    givenLinkedTasks([
+      { title: "Choisir l'offre de Refonte du site", status: 'DONE' },
+    ]);
+
+    expect(
+      await createInternalTask(client, { ...INPUT, duplicateCheck: 'any' }),
+    ).toEqual({ created: false });
+    expect(client.mutation).not.toHaveBeenCalled();
+  });
 });

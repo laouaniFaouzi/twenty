@@ -39,7 +39,6 @@ export default defineApplicationRole({
   canBeAssignedToApiKeys: false,
   objectPermissions: [
     ...[
-      STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.task.universalIdentifier,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.taskTarget.universalIdentifier,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.noteTarget.universalIdentifier,
       PROJECT_UNIVERSAL_IDENTIFIER,
@@ -56,6 +55,7 @@ export default defineApplicationRole({
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.person.universalIdentifier,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.company.universalIdentifier,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.note.universalIdentifier,
+      STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.task.universalIdentifier,
     ].map((objectUniversalIdentifier) => ({
       objectUniversalIdentifier,
       ...READ_AND_UPDATE,

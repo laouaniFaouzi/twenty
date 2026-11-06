@@ -205,73 +205,149 @@ describe('handleLeadUpdated', () => {
 });
 
 describe('handleLeadDeleted', () => {
-  it('deletes an unsigned opportunity, then the person and the company left without links', async () => {
-    givenOpportunity(opportunity('DISCUSSION', 'in_progress'));
+  const REPLY_TITLE = 'Répondre à Marie Curie · IFZ-261106-0042';
+  const CLOSE_TITLE =
+    'Demande IFZ-261106-0042 clôturée sur le site : passer en Signé ou Perdu';
+
+  type World = {
+    stage?: InterfazeStage;
+    personCompanyId?: string | null;
+    clientStatus?: string;
+    otherOpportunitiesOfPerson?: number;
+    companyRecords?: Partial<
+      Record<
+        'opportunities' | 'projects' | 'maintenanceContracts' | 'people',
+        number
+      >
+    >;
+    tasks?: { id: string; title: string }[];
+  };
+
+  const records = (count = 0) =>
+    Array.from({ length: count }, (_, index) => ({ id: `X${index}` }));
+
+  const givenWorld = ({
+    stage = 'DISCUSSION',
+    personCompanyId = 'C1',
+    clientStatus = 'PROSPECT',
+    otherOpportunitiesOfPerson = 0,
+    companyRecords = {},
+    tasks = [],
+  }: World = {}) =>
+    answerQueries(client, {
+      opportunities: (filter) =>
+        'or' in filter
+          ? [opportunity(stage, 'in_progress')]
+          : 'pointOfContactId' in filter
+            ? records(otherOpportunitiesOfPerson)
+            : records(companyRecords.opportunities),
+      people: (filter) =>
+        'id' in filter
+          ? [{ id: 'P1', companyId: personCompanyId }]
+          : records(companyRecords.people),
+      companies: () => [{ id: 'C1', clientStatus }],
+      projects: () => records(companyRecords.projects),
+      maintenanceContracts: () => records(companyRecords.maintenanceContracts),
+      tasks: () => tasks,
+    });
+
+  it('deletes an unsigned opportunity, its tasks, then the person and the company left without links', async () => {
+    givenWorld({
+      tasks: [
+        { id: 'T1', title: REPLY_TITLE },
+        { id: 'T2', title: CLOSE_TITLE },
+      ],
+    });
 
     await handleLeadDeleted(client, LEAD);
 
+    expect(queryFilters(client, 'tasks')).toEqual([
+      { title: { in: [REPLY_TITLE, CLOSE_TITLE] } },
+    ]);
     expect(mutationNames(client)).toEqual([
       'deleteOpportunity',
+      'deleteTask',
+      'deleteTask',
       'deletePerson',
       'deleteCompany',
     ]);
     expect(mutationArgs(client, 'deleteOpportunity')).toEqual([{ id: 'O1' }]);
+    expect(mutationArgs(client, 'deleteTask')).toEqual([
+      { id: 'T1' },
+      { id: 'T2' },
+    ]);
     expect(mutationArgs(client, 'deletePerson')).toEqual([{ id: 'P1' }]);
     expect(mutationArgs(client, 'deleteCompany')).toEqual([{ id: 'C1' }]);
   });
 
-  it('keeps a person who has another opportunity', async () => {
-    givenOpportunity(opportunity('LOST', 'done'), {
-      opportunities: (filter) =>
-        'pointOfContactId' in filter
-          ? [{ id: 'O9' }]
-          : 'or' in filter
-            ? [opportunity('LOST', 'done')]
-            : [],
+  it('keeps a person who has another opportunity, and the company of a kept person', async () => {
+    givenWorld({
+      otherOpportunitiesOfPerson: 1,
+      companyRecords: { people: 1 },
     });
 
     await handleLeadDeleted(client, LEAD);
 
-    expect(mutationNames(client)).toEqual([
-      'deleteOpportunity',
-      'deleteCompany',
-    ]);
+    expect(mutationNames(client)).toEqual(['deleteOpportunity']);
   });
 
   it.each([
-    ['an opportunity', 'opportunities'],
-    ['a project', 'projects'],
-    ['a maintenance contract', 'maintenanceContracts'],
-    ['another person', 'people'],
-  ])('keeps a company that still has %s', async (_, root) => {
-    givenOpportunity(opportunity('NEW_REQUEST', 'new'), {
-      [root]: (filter: Record<string, unknown>) =>
-        'companyId' in filter
-          ? [{ id: 'X1' }]
-          : 'or' in filter
-            ? [opportunity('NEW_REQUEST', 'new')]
-            : [],
-    });
+    ['a client', { clientStatus: 'CLIENT' }],
+    ['a former client', { clientStatus: 'FORMER_CLIENT' }],
+    ['a company with a project', { companyRecords: { projects: 1 } }],
+    [
+      'a company with a maintenance contract',
+      { companyRecords: { maintenanceContracts: 1 } },
+    ],
+  ] as const)('keeps a contact of %s, and the company', async (_, world) => {
+    givenWorld(world);
+
+    await handleLeadDeleted(client, LEAD);
+
+    expect(mutationNames(client)).toEqual(['deleteOpportunity']);
+  });
+
+  it.each([
+    ['another opportunity', { opportunities: 1 }],
+    ['another person', { people: 1 }],
+  ])(
+    'keeps a prospect company that still has %s, deleting the person',
+    async (_, companyRecords) => {
+      givenWorld({ companyRecords });
+
+      await handleLeadDeleted(client, LEAD);
+
+      expect(mutationNames(client)).toEqual([
+        'deleteOpportunity',
+        'deletePerson',
+      ]);
+    },
+  );
+
+  it('deletes a person without a company and the prospect company of the lead', async () => {
+    givenWorld({ personCompanyId: null });
 
     await handleLeadDeleted(client, LEAD);
 
     expect(mutationNames(client)).toEqual([
       'deleteOpportunity',
       'deletePerson',
+      'deleteCompany',
     ]);
   });
 
   it('keeps a signed opportunity and everything around it', async () => {
-    givenOpportunity(opportunity('WON', 'done'));
+    givenWorld({ stage: 'WON', tasks: [{ id: 'T1', title: REPLY_TITLE }] });
 
     await handleLeadDeleted(client, LEAD);
 
     expect(client.mutation).not.toHaveBeenCalled();
   });
 
-  it('only deletes the note of a lead added to another opportunity', async () => {
+  it('only deletes the note and the tasks of a lead added to another opportunity', async () => {
     answerQueries(client, {
       notes: () => [{ id: 'N1' }],
+      tasks: () => [{ id: 'T1', title: REPLY_TITLE }],
     });
 
     await handleLeadDeleted(client, { ...LEAD, crm_id: null });
@@ -279,7 +355,7 @@ describe('handleLeadDeleted', () => {
     expect(queryFilters(client, 'notes')).toEqual([
       { title: { eq: 'Nouvelle demande IFZ-261106-0042' } },
     ]);
-    expect(mutationNames(client)).toEqual(['deleteNote']);
+    expect(mutationNames(client)).toEqual(['deleteNote', 'deleteTask']);
     expect(mutationArgs(client, 'deleteNote')).toEqual([{ id: 'N1' }]);
   });
 

@@ -219,6 +219,10 @@ const labelOf = (
 ): string | null =>
   options.find((option) => option.value === value)?.label ?? null;
 
+// Visitor text is converted to note blocks: unescaped, an image link would load when the note opens.
+const escapeMarkdown = (text: string | null): string | null =>
+  text === null ? null : text.replace(/[\\`*_{}[\]()#+\-.!<>|~]/g, '\\$&');
+
 export const buildLeadNoteMarkdown = (lead: SiteLead): string => {
   const need = lookUp(NEED_BY_SITE_VALUE, lead.need);
   const details: [string, string | null][] = [
@@ -235,8 +239,8 @@ export const buildLeadNoteMarkdown = (lead: SiteLead): string => {
       'Délai',
       labelOf(TIMING_OPTIONS, lookUp(TIMING_BY_SITE_VALUE, lead.timing)),
     ],
-    ['Téléphone', lead.phone?.trim() || null],
-    ['Message', lead.message?.trim() || null],
+    ['Téléphone', escapeMarkdown(lead.phone?.trim() || null)],
+    ['Message', escapeMarkdown(lead.message?.trim() || null)],
   ];
 
   return details

@@ -52,7 +52,7 @@ export const leadNoteTitle = (ref: string) => `Nouvelle demande ${ref}`;
 
 export const REPLY_TASK_TITLE_PREFIX = 'Répondre à ';
 
-const replyTaskTitle = (lead: SiteLead) =>
+export const replyTaskTitle = (lead: Pick<SiteLead, 'name' | 'ref'>) =>
   `${REPLY_TASK_TITLE_PREFIX}${lead.name.trim()} · ${lead.ref}`;
 
 const replyDueAt = (createdAt: string): string | null => {
@@ -91,14 +91,18 @@ export const findMemberIdByEmail = async (
   );
 };
 
+type ExistingRecord =
+  | { kind: 'opportunity'; opportunityId: string; personId: string | null }
+  | { kind: 'note'; noteId: string; opportunityId: string | null };
+
 const findExistingRecord = async (
   client: RecordApiClient,
   lead: SiteLead,
-): Promise<{ opportunityId: string | null; isNote: boolean } | null> => {
+): Promise<ExistingRecord | null> => {
   const response = await client.query({
     opportunities: {
       __args: { filter: { siteLeadId: { eq: lead.id } }, first: 1 },
-      edges: { node: { id: true } },
+      edges: { node: { id: true, pointOfContactId: true } },
     },
     notes: {
       __args: { filter: { title: { eq: leadNoteTitle(lead.ref) } }, first: 1 },
@@ -113,13 +117,17 @@ const findExistingRecord = async (
     },
   });
 
-  const opportunity = getEdgeNodes<{ id: string }>(
-    response,
-    'opportunities',
-  )[0];
+  const opportunity = getEdgeNodes<{
+    id: string;
+    pointOfContactId: string | null;
+  }>(response, 'opportunities')[0];
 
   if (opportunity !== undefined) {
-    return { opportunityId: opportunity.id, isNote: false };
+    return {
+      kind: 'opportunity',
+      opportunityId: opportunity.id,
+      personId: opportunity.pointOfContactId ?? null,
+    };
   }
 
   const note = getEdgeNodes<NoteSummary>(response, 'notes')[0];
@@ -133,7 +141,7 @@ const findExistingRecord = async (
       .map(({ node }) => node.targetOpportunityId)
       .find((targetId) => targetId !== null) ?? null;
 
-  return { opportunityId, isNote: true };
+  return { kind: 'note', noteId: note.id, opportunityId };
 };
 
 const findPersonByEmail = async (
@@ -206,7 +214,8 @@ const createPerson = async (
   const create = async (personData: Record<string, unknown>) =>
     createdId(
       await client.mutation({
-        createPerson: { __args: { data: personData }, id: true },
+        // The email is unique even in the trash: upsert restores that person instead of failing.
+        createPerson: { __args: { data: personData, upsert: true }, id: true },
       }),
       'createPerson',
     );
@@ -247,31 +256,55 @@ const addLeadNote = async (
   client: RecordApiClient,
   lead: SiteLead,
   opportunityId: string,
+  existingNoteId: string | null,
 ) => {
-  const created = await client.mutation({
-    createNote: {
-      __args: {
-        data: {
-          title: leadNoteTitle(lead.ref),
-          bodyV2: { markdown: buildLeadNoteMarkdown(lead), blocknote: null },
+  const noteId =
+    existingNoteId ??
+    createdId(
+      await client.mutation({
+        createNote: {
+          __args: {
+            data: {
+              title: leadNoteTitle(lead.ref),
+              bodyV2: {
+                markdown: buildLeadNoteMarkdown(lead),
+                blocknote: null,
+              },
+            },
+          },
+          id: true,
         },
-      },
-      id: true,
-    },
-  });
+      }),
+      'createNote',
+    );
 
   await client.mutation({
     createNoteTarget: {
-      __args: {
-        data: {
-          noteId: createdId(created, 'createNote'),
-          targetOpportunityId: opportunityId,
-        },
-      },
+      __args: { data: { noteId, targetOpportunityId: opportunityId } },
       id: true,
     },
   });
 };
+
+// Any reply task for this lead, even done, means an earlier run already got that far.
+const createReplyTask = async (
+  client: RecordApiClient,
+  lead: SiteLead,
+  {
+    ownerId,
+    opportunityId,
+    personId,
+  }: { ownerId: string | null; opportunityId: string; personId: string | null },
+) =>
+  createInternalTask(client, {
+    title: replyTaskTitle(lead),
+    assigneeId: ownerId,
+    dueAt: replyDueAt(lead.created_at),
+    target: { objectName: 'opportunity', recordId: opportunityId },
+    extraTargets:
+      personId === null ? [] : [{ objectName: 'person', recordId: personId }],
+    duplicateCheck: 'any',
+  });
 
 export const handleLeadCreated = async (
   client: RecordApiClient,
@@ -279,20 +312,32 @@ export const handleLeadCreated = async (
   { settings, patchLead }: LeadSyncDependencies,
 ): Promise<LeadCreatedResult> => {
   const existing = await findExistingRecord(client, lead);
+  const email = lead.email.trim();
 
-  if (existing !== null) {
-    if (
-      !existing.isNote &&
-      existing.opportunityId !== null &&
-      lead.crm_id !== existing.opportunityId
-    ) {
+  if (existing?.kind === 'opportunity') {
+    await createReplyTask(client, lead, {
+      ownerId: await findMemberIdByEmail(client, settings.leadOwnerEmail),
+      opportunityId: existing.opportunityId,
+      personId: existing.personId,
+    });
+
+    if (lead.crm_id !== existing.opportunityId) {
       await patchLead(settings, lead.id, { crm_id: existing.opportunityId });
     }
 
     return { outcome: 'duplicate', opportunityId: existing.opportunityId };
   }
 
-  const email = lead.email.trim();
+  if (existing?.kind === 'note' && existing.opportunityId !== null) {
+    await createReplyTask(client, lead, {
+      ownerId: await findMemberIdByEmail(client, settings.leadOwnerEmail),
+      opportunityId: existing.opportunityId,
+      personId: (await findPersonByEmail(client, email))?.id ?? null,
+    });
+
+    return { outcome: 'duplicate', opportunityId: existing.opportunityId };
+  }
+
   const person = await findPersonByEmail(client, email);
   const typedCompanyName = lead.company?.trim() ?? '';
   const company =
@@ -327,7 +372,12 @@ export const handleLeadCreated = async (
 
   if (openOpportunityId !== null) {
     opportunityId = openOpportunityId;
-    await addLeadNote(client, lead, opportunityId);
+    await addLeadNote(
+      client,
+      lead,
+      opportunityId,
+      existing?.kind === 'note' ? existing.noteId : null,
+    );
   } else {
     const created = await client.mutation({
       createOpportunity: {
@@ -346,13 +396,7 @@ export const handleLeadCreated = async (
     opportunityId = createdId(created, 'createOpportunity');
   }
 
-  await createInternalTask(client, {
-    title: replyTaskTitle(lead),
-    assigneeId: ownerId,
-    dueAt: replyDueAt(lead.created_at),
-    target: { objectName: 'opportunity', recordId: opportunityId },
-    extraTargets: [{ objectName: 'person', recordId: personId }],
-  });
+  await createReplyTask(client, lead, { ownerId, opportunityId, personId });
 
   if (openOpportunityId !== null) {
     // crm_id is unique on the site and already points this opportunity to the first lead.

@@ -27,7 +27,6 @@ describe('default role', () => {
 
   it('grants read and update on the objects the automations touch, never delete', () => {
     for (const objectUniversalIdentifier of [
-      STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.task.universalIdentifier,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.taskTarget.universalIdentifier,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.noteTarget.universalIdentifier,
       PROJECT_UNIVERSAL_IDENTIFIER,
@@ -58,6 +57,7 @@ describe('default role', () => {
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.person.universalIdentifier,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.company.universalIdentifier,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.note.universalIdentifier,
+      STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.task.universalIdentifier,
     ]) {
       expect(permissionFor(objectUniversalIdentifier)).toMatchObject({
         canReadObjectRecords: true,
