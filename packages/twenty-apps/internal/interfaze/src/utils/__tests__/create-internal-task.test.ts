@@ -90,6 +90,28 @@ describe('createInternalTask', () => {
     ]);
   });
 
+  it('links to a project or a maintenance contract with the matching target field', async () => {
+    givenLinkedTasks([]);
+
+    await createInternalTask(client, {
+      ...INPUT,
+      target: { objectName: 'project', recordId: 'project-1' },
+      extraTargets: [
+        { objectName: 'maintenanceContract', recordId: 'contract-1' },
+      ],
+    });
+
+    expect(mutationArgs(client, 'createTaskTarget')).toEqual([
+      { data: { taskId: 'task-new', targetProjectId: 'project-1' } },
+      {
+        data: {
+          taskId: 'task-new',
+          targetMaintenanceContractId: 'contract-1',
+        },
+      },
+    ]);
+  });
+
   it('links the task to extra records after its first target, still checking duplicates on the first one only', async () => {
     givenLinkedTasks([]);
 

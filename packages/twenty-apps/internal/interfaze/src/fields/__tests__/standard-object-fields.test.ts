@@ -14,6 +14,7 @@ import opportunityReceivedAt from 'src/fields/opportunity-received-at.field';
 import opportunityRequestMessage from 'src/fields/opportunity-request-message.field';
 import opportunityRequestRef from 'src/fields/opportunity-request-ref.field';
 import opportunityRequestSource from 'src/fields/opportunity-request-source.field';
+import opportunityResponseOverdue from 'src/fields/opportunity-response-overdue.field';
 import opportunitySiteLeadId from 'src/fields/opportunity-site-lead-id.field';
 import opportunitySiteLeadStatusSeen from 'src/fields/opportunity-site-lead-status-seen.field';
 import opportunityTiming from 'src/fields/opportunity-timing.field';
@@ -192,4 +193,16 @@ describe('Interfaze fields on standard objects', () => {
       expect(definition.config.isUIEditable).toBe(false);
     },
   );
+
+  it('flags requests left without answer as a technical boolean, false by default', () => {
+    expect(opportunityResponseOverdue.success).toBe(true);
+    expect(opportunityResponseOverdue.config).toMatchObject({
+      objectUniversalIdentifier: OPPORTUNITY,
+      type: FieldType.BOOLEAN,
+      name: 'responseOverdue',
+      label: 'Sans réponse après 48 h',
+      defaultValue: false,
+      isUIEditable: false,
+    });
+  });
 });

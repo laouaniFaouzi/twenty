@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { readSyncSettings } from 'src/utils/sync-settings';
+import { readLeadOwnerEmail, readSyncSettings } from 'src/utils/sync-settings';
 
 const COMPLETE_ENV = {
   SUPABASE_URL: 'https://abc.supabase.co',
@@ -65,4 +65,19 @@ describe('readSyncSettings', () => {
         'Variables manquantes : SUPABASE_URL, SUPABASE_SECRET_KEY, HUBFAZE_WEBHOOK_SECRET',
     });
   });
+});
+
+describe('readLeadOwnerEmail', () => {
+  it('reads the lead owner without any Supabase variable', () => {
+    expect(
+      readLeadOwnerEmail({ LEAD_OWNER_EMAIL: ' lucas@interfaze.fr ' }),
+    ).toBe('lucas@interfaze.fr');
+  });
+
+  it.each([[{}], [{ LEAD_OWNER_EMAIL: '  ' }]])(
+    'reads nothing when the variable is empty (%#)',
+    (env) => {
+      expect(readLeadOwnerEmail(env)).toBeNull();
+    },
+  );
 });

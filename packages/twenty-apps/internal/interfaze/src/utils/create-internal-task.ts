@@ -4,7 +4,12 @@ import {
 } from 'src/utils/record-api-client';
 
 export type InternalTaskTarget = {
-  objectName: 'opportunity' | 'company' | 'person';
+  objectName:
+    | 'opportunity'
+    | 'company'
+    | 'person'
+    | 'project'
+    | 'maintenanceContract';
   recordId: string;
 };
 
@@ -26,6 +31,8 @@ const TARGET_FIELD_BY_OBJECT: Record<InternalTaskTarget['objectName'], string> =
     opportunity: 'targetOpportunityId',
     company: 'targetCompanyId',
     person: 'targetPersonId',
+    project: 'targetProjectId',
+    maintenanceContract: 'targetMaintenanceContractId',
   };
 
 export const createInternalTask = async (

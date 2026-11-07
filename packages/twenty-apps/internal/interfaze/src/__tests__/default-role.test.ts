@@ -80,11 +80,21 @@ describe('default role', () => {
       'workspace members',
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.workspaceMember.universalIdentifier,
     ],
-    ['maintenance contracts', MAINTENANCE_CONTRACT_UNIVERSAL_IDENTIFIER],
   ])('only reads %s', (_, objectUniversalIdentifier) => {
     expect(permissionFor(objectUniversalIdentifier)).toMatchObject({
       canReadObjectRecords: true,
       canUpdateObjectRecords: false,
+      canSoftDeleteObjectRecords: false,
+      canDestroyObjectRecords: false,
+    });
+  });
+
+  it('reads and updates maintenance contracts for their renewal tasks, never deletes them', () => {
+    expect(
+      permissionFor(MAINTENANCE_CONTRACT_UNIVERSAL_IDENTIFIER),
+    ).toMatchObject({
+      canReadObjectRecords: true,
+      canUpdateObjectRecords: true,
       canSoftDeleteObjectRecords: false,
       canDestroyObjectRecords: false,
     });

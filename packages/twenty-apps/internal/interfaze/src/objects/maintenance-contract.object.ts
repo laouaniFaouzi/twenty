@@ -11,6 +11,7 @@ export const MAINTENANCE_CONTRACT_BILLING_PERIOD_FIELD_UNIVERSAL_IDENTIFIER = '9
 export const MAINTENANCE_CONTRACT_START_DATE_FIELD_UNIVERSAL_IDENTIFIER = '424d92b1-68f8-406b-a9c7-dd1b742ce15f';
 export const MAINTENANCE_CONTRACT_RENEWAL_DATE_FIELD_UNIVERSAL_IDENTIFIER = '0c5e1e32-8df3-4417-b949-0c1647734da0';
 export const MAINTENANCE_CONTRACT_STATUS_FIELD_UNIVERSAL_IDENTIFIER = 'bde0438a-a362-47fd-84f6-0265cba636b2';
+export const MAINTENANCE_CONTRACT_RENEWAL_TASK_CREATED_FOR_FIELD_UNIVERSAL_IDENTIFIER = 'c275190a-a844-4811-aeb8-7b2d9656e213';
 
 export default defineObject({
   universalIdentifier: MAINTENANCE_CONTRACT_UNIVERSAL_IDENTIFIER,
@@ -92,6 +93,17 @@ export default defineObject({
         { id: '2231658f-18fe-4ca8-b3f4-fa9b13e412fb', value: 'ACTIVE', label: 'Actif', position: 0, color: 'green' },
         { id: 'f265920e-29df-4219-acbf-3a81b1561d4d', value: 'TERMINATED', label: 'Résilié', position: 1, color: 'gray' },
       ],
+    },
+    {
+      universalIdentifier: MAINTENANCE_CONTRACT_RENEWAL_TASK_CREATED_FOR_FIELD_UNIVERSAL_IDENTIFIER,
+      type: FieldType.DATE,
+      name: 'renewalTaskCreatedFor',
+      label: 'Tâche de renouvellement créée pour',
+      description:
+        'Date de renouvellement pour laquelle la tâche « Renouveler le contrat … » existe déjà',
+      icon: 'IconPlug',
+      isNullable: true,
+      isUIEditable: false,
     },
   ],
 });

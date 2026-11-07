@@ -150,6 +150,16 @@ describe('Interfaze objects', () => {
     expect(typeOf(maintenanceContract, 'startDate')).toBe(FieldType.DATE);
     expect(typeOf(maintenanceContract, 'renewalDate')).toBe(FieldType.DATE);
   });
+
+  it('remembers the renewal date a task was created for', () => {
+    expect(
+      fieldNamed(maintenanceContract, 'renewalTaskCreatedFor'),
+    ).toMatchObject({
+      type: FieldType.DATE,
+      isNullable: true,
+      isUIEditable: false,
+    });
+  });
 });
 
 const COMPANY = STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.company.universalIdentifier;

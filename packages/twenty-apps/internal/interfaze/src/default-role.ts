@@ -29,7 +29,7 @@ export default defineApplicationRole({
   universalIdentifier: DEFAULT_ROLE_UNIVERSAL_IDENTIFIER,
   label: 'Interfaze function role',
   description:
-    'Rôle des automatismes Interfaze : lit et met à jour les opportunités, sociétés, projets et tâches.',
+    'Rôle des automatismes Interfaze : lit et met à jour les opportunités, sociétés, projets, contrats et tâches.',
   canReadAllObjectRecords: false,
   canUpdateAllObjectRecords: false,
   canSoftDeleteAllObjectRecords: false,
@@ -44,6 +44,7 @@ export default defineApplicationRole({
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.noteTarget.universalIdentifier,
       PROJECT_UNIVERSAL_IDENTIFIER,
       PAGE_UNIVERSAL_IDENTIFIER,
+      MAINTENANCE_CONTRACT_UNIVERSAL_IDENTIFIER,
     ].map((objectUniversalIdentifier) => ({
       objectUniversalIdentifier,
       ...READ_AND_UPDATE,
@@ -65,7 +66,6 @@ export default defineApplicationRole({
     })),
     ...[
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.workspaceMember.universalIdentifier,
-      MAINTENANCE_CONTRACT_UNIVERSAL_IDENTIFIER,
     ].map((objectUniversalIdentifier) => ({
       objectUniversalIdentifier,
       ...READ_ONLY,

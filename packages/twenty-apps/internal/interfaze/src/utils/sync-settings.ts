@@ -27,6 +27,10 @@ const readVariable = (
   return value ? value : null;
 };
 
+export const readLeadOwnerEmail = (
+  env: Record<string, string | undefined>,
+): string | null => readVariable(env, 'LEAD_OWNER_EMAIL');
+
 export const readSyncSettings = (
   env: Record<string, string | undefined>,
 ): SyncSettingsResult => {
@@ -50,7 +54,7 @@ export const readSyncSettings = (
       ),
       supabaseSecretKey: readVariable(env, 'SUPABASE_SECRET_KEY') ?? '',
       webhookSecret: readVariable(env, 'HUBFAZE_WEBHOOK_SECRET') ?? '',
-      leadOwnerEmail: readVariable(env, 'LEAD_OWNER_EMAIL'),
+      leadOwnerEmail: readLeadOwnerEmail(env),
       siteUrl: (readVariable(env, 'SITE_URL') ?? DEFAULT_SITE_URL).replace(
         /\/+$/,
         '',
