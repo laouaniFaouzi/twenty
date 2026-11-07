@@ -39,6 +39,7 @@ const handler = async (
     {
       settings: settingsResult.success ? settingsResult.settings : null,
       patchLead: patchSiteLead,
+      now: () => new Date(),
     },
   );
 };

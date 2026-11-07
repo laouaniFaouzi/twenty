@@ -42,7 +42,12 @@ const stageChange = (
 const run = (
   event: ReturnType<typeof stageChange>,
   settings: SyncSettings | null = SETTINGS,
-) => handleOpportunityStageChange(client, event, { settings, patchLead });
+) =>
+  handleOpportunityStageChange(client, event, {
+    settings,
+    patchLead,
+    now: () => new Date('2026-11-07T10:00:00.000Z'),
+  });
 
 beforeEach(() => {
   client = createMockRecordApiClient();
@@ -143,7 +148,7 @@ describe('handleOpportunityStageChange', () => {
     expect(client.query).not.toHaveBeenCalled();
   });
 
-  it('closes the reply tasks before calling the site, so a site error cannot leave them open', async () => {
+  it('closes the reply tasks before calling the site, and notes a site error in the Journal without throwing', async () => {
     answerQueries(client, {
       taskTargets: () => [
         {
@@ -160,10 +165,19 @@ describe('handleOpportunityStageChange', () => {
       new Error('Supabase a refusé la mise à jour de la demande L1 (500)'),
     );
 
-    await expect(run(stageChange('NEW_REQUEST', 'DISCUSSION'))).rejects.toThrow(
-      '(500)',
-    );
-    expect(mutationNames(client)).toEqual(['updateTask']);
+    await expect(
+      run(stageChange('NEW_REQUEST', 'DISCUSSION')),
+    ).resolves.toBeUndefined();
+    expect(mutationNames(client)).toEqual(['updateTask', 'createSyncLog']);
+    expect(mutationArgs(client, 'createSyncLog')[0]).toMatchObject({
+      data: {
+        direction: 'CRM_TO_SITE',
+        entity: 'LEAD',
+        siteId: 'L1',
+        recordId: 'O1',
+        error: 'Supabase a refusé la mise à jour de la demande L1 (500)',
+      },
+    });
   });
 
   it('ignores an event where the stage did not change', async () => {

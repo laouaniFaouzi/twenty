@@ -5,6 +5,7 @@ import {
   getEdgeNodes,
   type RecordApiClient,
 } from 'src/utils/record-api-client';
+import { recordSyncFailure } from 'src/utils/record-sync-failure';
 import { type patchSiteLead } from 'src/utils/supabase-leads';
 import { type SyncSettings } from 'src/utils/sync-settings';
 
@@ -62,7 +63,12 @@ export const handleOpportunityStageChange = async (
   {
     settings,
     patchLead,
-  }: { settings: SyncSettings | null; patchLead: typeof patchSiteLead },
+    now,
+  }: {
+    settings: SyncSettings | null;
+    patchLead: typeof patchSiteLead;
+    now: () => Date;
+  },
 ): Promise<void> => {
   const previousStage = before.interfazeStage ?? null;
   const stage = after.interfazeStage ?? null;
@@ -87,7 +93,25 @@ export const handleOpportunityStageChange = async (
     return;
   }
 
-  await patchLead(settings, siteLeadId, { status });
+  try {
+    await patchLead(settings, siteLeadId, { status });
+  } catch (error) {
+    // The reconciliation sends the status again on its next run.
+    await recordSyncFailure(
+      client,
+      {
+        direction: 'CRM_TO_SITE',
+        entity: 'LEAD',
+        siteId: siteLeadId,
+        recordId,
+        error,
+      },
+      now(),
+    );
+
+    return;
+  }
+
   await client.mutation({
     updateOpportunity: {
       __args: { id: recordId, data: { siteLeadStatusSeen: status } },
