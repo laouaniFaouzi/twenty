@@ -56,3 +56,19 @@ export const siteRest = async <TRow>(
 
   return response.status === 204 ? [] : ((await response.json()) as TRow[]);
 };
+
+// Removing a project in HubFaze leaves its tracker on the site; left there, the
+// next run's reconciliation tries to rebuild every one of them.
+export const deleteSiteTrackersOf = async (clientName: string) => {
+  if (!process.env.SUPABASE_URL) {
+    return;
+  }
+
+  await siteRest(
+    'DELETE',
+    'trackers',
+    `?client_name=eq.${encodeURIComponent(clientName)}`,
+    undefined,
+    { fromHubFaze: true },
+  );
+};

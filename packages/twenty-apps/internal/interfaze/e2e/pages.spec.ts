@@ -8,6 +8,7 @@ import {
   type RecordApiClient,
   toRecordApiClient,
 } from '../src/utils/record-api-client';
+import { deleteSiteTrackersOf } from '../src/__tests__/utils/integration-helpers';
 import { SCREENSHOT_DIR, shoot, workspaceUrl } from './utils';
 
 const COMPANY_NAME = '[e2e-pages] Fleuriste';
@@ -92,6 +93,8 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
+  await deleteSiteTrackersOf(COMPANY_NAME);
+
   const projectPages = getEdgeNodes<{ id: string }>(
     await client.query({
       pages: {

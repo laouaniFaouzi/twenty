@@ -1,6 +1,7 @@
 import { CoreApiClient } from 'twenty-client-sdk/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { deleteSiteTrackersOf } from 'src/__tests__/utils/integration-helpers';
 import {
   getEdgeNodes,
   type RecordApiClient,
@@ -116,6 +117,8 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  await deleteSiteTrackersOf(COMPANY_NAME);
+
   if (opportunityId) {
     await client
       .mutation({ destroyOpportunity: { __args: { id: opportunityId }, id: true } })

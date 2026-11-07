@@ -7,9 +7,11 @@ import {
   type RecordApiClient,
   toRecordApiClient,
 } from '../src/utils/record-api-client';
+import { deleteSiteTrackersOf } from '../src/__tests__/utils/integration-helpers';
 import { SCREENSHOT_DIR, shoot, workspaceUrl } from './utils';
 
 const PREFIX = '[e2e-pilotage]';
+const COMPANY_NAME = `${PREFIX} Atelier`;
 
 const WIDGET_TITLES = [
   'Nouvelles demandes sur 7 jours',
@@ -47,7 +49,7 @@ test.beforeAll(async () => {
   client = toRecordApiClient(new CoreApiClient());
 
   const today = agencyToday(new Date());
-  const companyId = await create('company', { name: `${PREFIX} Atelier` });
+  const companyId = await create('company', { name: COMPANY_NAME });
 
   await create('opportunity', {
     name: `${PREFIX} Demande`,
@@ -73,6 +75,8 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
+  await deleteSiteTrackersOf(COMPANY_NAME);
+
   for (const [objectName, id] of created.reverse()) {
     const mutationName = `destroy${objectName.charAt(0).toUpperCase()}${objectName.slice(1)}`;
 
