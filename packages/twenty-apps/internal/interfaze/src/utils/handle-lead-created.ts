@@ -169,7 +169,7 @@ export const findOrCreateCompany = async (
   client: RecordApiClient,
   typedName: string,
   clientStatus: 'PROSPECT' | 'CLIENT',
-): Promise<{ id: string; name: string }> => {
+): Promise<{ id: string; name: string; created: boolean }> => {
   const name = typedName.trim().replace(/\s+/g, ' ');
   const response = await client.query({
     companies: {
@@ -187,7 +187,7 @@ export const findOrCreateCompany = async (
   );
 
   if (match !== undefined) {
-    return { id: match.id, name: (match.name ?? name).trim() };
+    return { id: match.id, name: (match.name ?? name).trim(), created: false };
   }
 
   const created = await client.mutation({
@@ -197,7 +197,7 @@ export const findOrCreateCompany = async (
     },
   });
 
-  return { id: createdId(created, 'createCompany'), name };
+  return { id: createdId(created, 'createCompany'), name, created: true };
 };
 
 const createPerson = async (

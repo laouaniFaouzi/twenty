@@ -44,6 +44,7 @@ type ProjectRecord = {
   syncHash: string | null;
   updatedAt: string;
   trackerUrl: { primaryLinkUrl: string | null } | null;
+  companyId: string | null;
   company: { name: string | null } | null;
 };
 
@@ -114,6 +115,7 @@ const findProject = async (
           syncHash: true,
           updatedAt: true,
           trackerUrl: { primaryLinkUrl: true },
+          companyId: true,
           company: { name: true },
         },
       },
@@ -242,6 +244,26 @@ const updateRecord = async (
   await client.mutation({ [mutationName]: { __args: { id, data }, id: true } });
 };
 
+// A crm_id HubFaze no longer knows is either in its trash (HubFaze deleted it, its deletion wins)
+// or simply gone, e.g. after a restore from backup: then the site's copy brings it back.
+const isInTrash = async (
+  client: RecordApiClient,
+  root: 'projects' | 'projectPhases' | 'projectTasks',
+  id: string,
+): Promise<boolean> =>
+  getEdgeNodes(
+    await client.query({
+      [root]: {
+        __args: {
+          filter: { id: { eq: id }, deletedAt: { is: 'NOT_NULL' } },
+          first: 1,
+        },
+        edges: { node: { id: true } },
+      },
+    }),
+    root,
+  ).length > 0;
+
 // Two deliveries can race to create the same record: the loser finds the winner's.
 const createOnce = async <TRecord>(
   create: () => Promise<unknown>,
@@ -283,6 +305,7 @@ const createProjectFromTracker = async (
   row: SiteTracker,
   deps: TrackerSyncDependencies,
 ) => {
+  const projectId = row.crm_id ?? row.id;
   const company = await findOrCreateCompany(client, row.client_name, 'CLIENT');
   const { offer, status } = projectDataFromTracker(row, null);
 
@@ -292,7 +315,7 @@ const createProjectFromTracker = async (
         createProject: {
           __args: {
             data: {
-              id: row.id,
+              id: projectId,
               name: `${row.client_name.trim()} · ${offer === null ? 'Suivi' : OFFER_LABELS[offer]}`,
               offer,
               status,
@@ -310,12 +333,23 @@ const createProjectFromTracker = async (
   );
 
   if (existing !== null) {
+    // The tracker's webhooks run in parallel: a company only this losing delivery created is a duplicate.
+    if (company.created && existing.companyId !== company.id) {
+      await client.mutation({
+        deleteCompany: { __args: { id: company.id }, id: true },
+      });
+    }
+
     await applyToExistingProject(client, row, existing, deps);
 
     return;
   }
 
-  await deps.rest.updateSiteTracker(deps.settings, row.id, { crm_id: row.id });
+  if (row.crm_id !== projectId) {
+    await deps.rest.updateSiteTracker(deps.settings, row.id, {
+      crm_id: projectId,
+    });
+  }
 };
 
 const applyToExistingProject = async (
@@ -396,8 +430,10 @@ export const applySiteTracker = async (
     return;
   }
 
-  // A crm_id without a live project means HubFaze deleted it: HubFaze's deletion wins.
-  if (row.crm_id !== null) {
+  if (
+    row.crm_id !== null &&
+    (await isInTrash(client, 'projects', row.crm_id))
+  ) {
     if (row.is_active) {
       await deps.rest.updateSiteTracker(deps.settings, row.id, {
         is_active: false,
@@ -489,7 +525,10 @@ export const applySitePhase = async (
   let phase = await findPhase(client, row);
 
   if (phase === null) {
-    if (row.crm_id !== null) {
+    if (
+      row.crm_id !== null &&
+      (await isInTrash(client, 'projectPhases', row.crm_id))
+    ) {
       await deps.rest.deleteSiteRowByCrmId(
         deps.settings,
         'tracker_phases',
@@ -507,7 +546,7 @@ export const applySitePhase = async (
           createProjectPhase: {
             __args: {
               data: {
-                id: row.id,
+                id: row.crm_id ?? row.id,
                 ...phaseDataFromSite(row),
                 projectId: project.id,
                 siteId: row.id,
@@ -522,9 +561,11 @@ export const applySitePhase = async (
     );
 
     if (phase === null) {
-      await deps.rest.updateSiteRow(deps.settings, 'tracker_phases', row.id, {
-        crm_id: row.id,
-      });
+      if (row.crm_id === null) {
+        await deps.rest.updateSiteRow(deps.settings, 'tracker_phases', row.id, {
+          crm_id: row.id,
+        });
+      }
 
       return;
     }
@@ -596,7 +637,10 @@ export const applySiteTask = async (
   let task = await findTask(client, row);
 
   if (task === null) {
-    if (row.crm_id !== null) {
+    if (
+      row.crm_id !== null &&
+      (await isInTrash(client, 'projectTasks', row.crm_id))
+    ) {
       await deps.rest.deleteSiteRowByCrmId(
         deps.settings,
         'tracker_tasks',
@@ -614,7 +658,7 @@ export const applySiteTask = async (
           createProjectTask: {
             __args: {
               data: {
-                id: row.id,
+                id: row.crm_id ?? row.id,
                 ...taskDataFromSite(row),
                 phaseId: phase.id,
                 projectId: phase.projectId,
@@ -630,9 +674,11 @@ export const applySiteTask = async (
     );
 
     if (task === null) {
-      await deps.rest.updateSiteRow(deps.settings, 'tracker_tasks', row.id, {
-        crm_id: row.id,
-      });
+      if (row.crm_id === null) {
+        await deps.rest.updateSiteRow(deps.settings, 'tracker_tasks', row.id, {
+          crm_id: row.id,
+        });
+      }
 
       return;
     }

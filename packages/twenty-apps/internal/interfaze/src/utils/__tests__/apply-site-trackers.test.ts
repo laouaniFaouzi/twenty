@@ -7,6 +7,7 @@ import {
   mutationArgs,
   mutationNames,
   type QueryAnswers,
+  queryFilters,
 } from 'src/__tests__/utils/create-mock-record-api-client';
 import {
   applySitePhase,
@@ -257,15 +258,79 @@ describe('applySiteTracker', () => {
     });
   });
 
-  it('archives the tracker again when HubFaze deleted its project', async () => {
-    given({ projects: () => [] });
+  it('archives the tracker again when HubFaze put its project in the trash', async () => {
+    given({
+      projects: (filter) =>
+        'deletedAt' in filter ? [{ id: 'P-deleted' }] : [],
+    });
 
     await applySiteTracker(client, { ...TRACKER, crm_id: 'P-deleted' }, deps);
 
+    expect(queryFilters(client, 'projects')).toContainEqual({
+      id: { eq: 'P-deleted' },
+      deletedAt: { is: 'NOT_NULL' },
+    });
     expect(mutationNames(client)).toEqual([]);
     expect(rest.updateSiteTracker).toHaveBeenCalledWith(SETTINGS, 'T1', {
       is_active: false,
     });
+  });
+
+  it('creates the project again, with its HubFaze id, when HubFaze lost it without deleting it', async () => {
+    given({ projects: () => [], companies: () => [] });
+
+    await applySiteTracker(client, { ...TRACKER, crm_id: 'P-lost' }, deps);
+
+    expect(mutationArgs(client, 'createProject')[0]).toMatchObject({
+      data: { id: 'P-lost', siteTrackerId: 'T1' },
+    });
+    expect(rest.updateSiteTracker).not.toHaveBeenCalledWith(SETTINGS, 'T1', {
+      is_active: false,
+    });
+  });
+
+  it('removes the company it created when another delivery created the project first', async () => {
+    let projectExists = false;
+
+    client.mutation.mockImplementation(
+      async (request: Record<string, unknown>) => {
+        const name = Object.keys(request)[0];
+
+        if (name === 'createProject') {
+          projectExists = true;
+          throw new Error('duplicate key value violates unique constraint');
+        }
+
+        return { [name]: { id: name === 'createCompany' ? 'C-new' : 'X' } };
+      },
+    );
+    given({
+      projects: () =>
+        projectExists
+          ? [
+              {
+                id: 'T1',
+                name: 'boulangerie emile · WebFaze',
+                offer: 'WEB',
+                status: 'IN_PROGRESS',
+                siteTrackerId: 'T1',
+                siteUpdatedAt: NOW_ISO,
+                syncHash: syncHashOf(trackerFieldsFromSite(TRACKER)),
+                updatedAt: NOW_ISO,
+                trackerUrl: {
+                  primaryLinkUrl: 'https://interfaze.fr/suivi/code-du-site',
+                },
+                companyId: 'C-winner',
+                company: { name: 'boulangerie emile' },
+              },
+            ]
+          : [],
+      companies: () => [],
+    });
+
+    await applySiteTracker(client, TRACKER, deps);
+
+    expect(mutationArgs(client, 'deleteCompany')).toEqual([{ id: 'C-new' }]);
   });
 });
 
@@ -425,8 +490,11 @@ describe('applySiteTask', () => {
     expect(rest.updateSiteRow).not.toHaveBeenCalled();
   });
 
-  it('deletes the site row of a task HubFaze deleted, instead of creating it again', async () => {
-    given({ projectTasks: () => [] });
+  it('deletes the site row of a task HubFaze put in the trash, instead of creating it again', async () => {
+    given({
+      projectTasks: (filter) =>
+        'deletedAt' in filter ? [{ id: 'TA-deleted' }] : [],
+    });
 
     await applySiteTask(client, { ...TASK, crm_id: 'TA-deleted' }, deps);
 
@@ -436,6 +504,20 @@ describe('applySiteTask', () => {
       'tracker_tasks',
       'TA-deleted',
     );
+  });
+
+  it('creates a task again, with its HubFaze id, when HubFaze lost it without deleting it', async () => {
+    given({
+      projectTasks: () => [],
+      projectPhases: () => [{ id: 'PH1', projectId: 'P1', siteId: 'PH1' }],
+    });
+
+    await applySiteTask(client, { ...TASK, crm_id: 'TA-lost' }, deps);
+
+    expect(rest.deleteSiteRowByCrmId).not.toHaveBeenCalled();
+    expect(mutationArgs(client, 'createProjectTask')[0]).toMatchObject({
+      data: { id: 'TA-lost', phaseId: 'PH1', siteId: 'TA1' },
+    });
   });
 
   it('trashes the task deleted on the site', async () => {
