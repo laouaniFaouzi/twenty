@@ -177,6 +177,8 @@ export default definePageLayout({
             primaryAxisGroupByFieldMetadataUniversalIdentifier:
               OPPORTUNITY_INTERFAZE_STAGE_FIELD_UNIVERSAL_IDENTIFIER,
             primaryAxisOrderBy: 'FIELD_POSITION_ASC',
+            // Otherwise every stage shows, Signé and Perdu as empty bars.
+            omitNullValues: true,
             layout: 'VERTICAL',
             axisNameDisplay: 'NONE',
             displayDataLabel: true,

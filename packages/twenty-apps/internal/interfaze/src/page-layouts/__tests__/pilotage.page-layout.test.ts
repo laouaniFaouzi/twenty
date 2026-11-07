@@ -184,6 +184,8 @@ describe('Pilotage dashboard', () => {
     expect(configurationOf('Pipeline par étape (montants)')).toMatchObject({
       primaryAxisGroupByFieldMetadataUniversalIdentifier: OPPORTUNITY_INTERFAZE_STAGE_FIELD_UNIVERSAL_IDENTIFIER,
       primaryAxisOrderBy: 'FIELD_POSITION_ASC',
+      // Without it the chart fills in every stage, Signé and Perdu as empty bars.
+      omitNullValues: true,
     });
     expect(filtersOf('Pipeline par étape (montants)')).toEqual([
       [OPPORTUNITY_INTERFAZE_STAGE_FIELD_UNIVERSAL_IDENTIFIER, ViewFilterOperand.IS, '["NEW_REQUEST","DISCUSSION","QUOTE_SENT"]', false],
