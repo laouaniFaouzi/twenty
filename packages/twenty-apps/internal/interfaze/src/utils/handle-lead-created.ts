@@ -46,7 +46,7 @@ const OPEN_STAGES: InterfazeStage[] = [
   'QUOTE_SENT',
 ];
 
-const REPLY_DELAY_IN_MILLISECONDS = 48 * 60 * 60 * 1000;
+export const REPLY_DELAY_IN_MILLISECONDS = 48 * 60 * 60 * 1000;
 
 export const leadNoteTitle = (ref: string) => `Nouvelle demande ${ref}`;
 
