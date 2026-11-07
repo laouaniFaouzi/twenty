@@ -1,6 +1,5 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
 import * as fs from 'fs';
-import * as path from 'path';
 import { CoreApiClient } from 'twenty-client-sdk/core';
 
 import { PAGES_TEST_IDS } from '../src/front-components/pages-test-ids';
@@ -9,24 +8,10 @@ import {
   type RecordApiClient,
   toRecordApiClient,
 } from '../src/utils/record-api-client';
-
-const WORKSPACE_ORIGIN_FILE = path.resolve(__dirname, '.auth', 'workspace-origin.txt');
-const SCREENSHOT_DIR = path.resolve(__dirname, '.results', 'screenshots');
+import { SCREENSHOT_DIR, shoot, workspaceUrl } from './utils';
 
 const COMPANY_NAME = '[e2e-pages] Fleuriste';
 const PROCESS_TITLE = '[e2e-pages] Process';
-
-const workspaceUrl = (): string => {
-  try {
-    return fs.readFileSync(WORKSPACE_ORIGIN_FILE, 'utf8').trim().replace(/\/$/, '');
-  } catch {
-    return 'http://localhost:3001';
-  }
-};
-
-const shoot = async (page: Page, name: string) => {
-  await page.screenshot({ path: path.join(SCREENSHOT_DIR, `${name}.png`), fullPage: true });
-};
 
 const pageIdFromUrl = (page: Page): string => {
   const match = page.url().match(/\/object\/page\/([0-9a-f-]{36})/);
