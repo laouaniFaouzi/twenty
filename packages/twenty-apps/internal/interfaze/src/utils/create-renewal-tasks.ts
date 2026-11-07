@@ -76,6 +76,8 @@ export const createRenewalTasks = async (
       continue;
     }
 
+    const dueAt = `${contract.renewalDate}${RENEWAL_TASK_DUE_TIME}`;
+
     try {
       const task = await createInternalTask(client, {
         title: renewalTaskTitle(
@@ -84,12 +86,22 @@ export const createRenewalTasks = async (
             'sans nom',
         ),
         assigneeId: contract.project?.ownerId ?? (await findLeadOwnerId()),
-        dueAt: `${contract.renewalDate}${RENEWAL_TASK_DUE_TIME}`,
+        dueAt,
         target: { objectName: 'maintenanceContract', recordId: contract.id },
         extraTargets: contract.company
           ? [{ objectName: 'company', recordId: contract.company.id }]
           : [],
       });
+
+      // A task still open from the previous renewal date follows the new one.
+      if (!task.created) {
+        await client.mutation({
+          updateTask: {
+            __args: { id: task.taskId, data: { dueAt } },
+            id: true,
+          },
+        });
+      }
 
       await client.mutation({
         updateMaintenanceContract: {

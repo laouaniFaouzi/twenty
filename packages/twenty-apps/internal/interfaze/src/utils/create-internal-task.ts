@@ -45,7 +45,7 @@ export const createInternalTask = async (
     extraTargets = [],
     duplicateCheck = 'unfinished',
   }: InternalTaskInput,
-): Promise<{ created: boolean }> => {
+): Promise<{ created: boolean; taskId: string }> => {
   const targetField = TARGET_FIELD_BY_OBJECT[target.objectName];
 
   const response = await client.query({
@@ -60,14 +60,14 @@ export const createInternalTask = async (
     },
   });
 
-  const hasOpenTwin = getEdgeNodes<LinkedTask>(response, 'taskTargets').some(
+  const twin = getEdgeNodes<LinkedTask>(response, 'taskTargets').find(
     ({ task }) =>
       task?.title === title &&
       (duplicateCheck === 'any' || task.status !== 'DONE'),
-  );
+  )?.task;
 
-  if (hasOpenTwin) {
-    return { created: false };
+  if (twin) {
+    return { created: false, taskId: twin.id };
   }
 
   const created = await client.mutation({
@@ -90,5 +90,5 @@ export const createInternalTask = async (
     });
   }
 
-  return { created: true };
+  return { created: true, taskId };
 };

@@ -40,7 +40,10 @@ describe('createInternalTask', () => {
   it('creates the task, then links it to its record', async () => {
     givenLinkedTasks([]);
 
-    expect(await createInternalTask(client, INPUT)).toEqual({ created: true });
+    expect(await createInternalTask(client, INPUT)).toEqual({
+      created: true,
+      taskId: 'task-new',
+    });
     expect(client.query.mock.calls[0][0].taskTargets.__args.filter).toEqual({
       targetOpportunityId: { eq: 'opportunity-1' },
     });
@@ -65,7 +68,11 @@ describe('createInternalTask', () => {
       { title: "Choisir l'offre de Refonte du site", status: 'IN_PROGRESS' },
     ]);
 
-    expect(await createInternalTask(client, INPUT)).toEqual({ created: false });
+    // The twin's id lets the caller update it instead.
+    expect(await createInternalTask(client, INPUT)).toEqual({
+      created: false,
+      taskId: 'task-0',
+    });
     expect(client.mutation).not.toHaveBeenCalled();
   });
 
@@ -74,7 +81,10 @@ describe('createInternalTask', () => {
       { title: "Choisir l'offre de Refonte du site", status: 'DONE' },
     ]);
 
-    expect(await createInternalTask(client, INPUT)).toEqual({ created: true });
+    expect(await createInternalTask(client, INPUT)).toEqual({
+      created: true,
+      taskId: 'task-new',
+    });
   });
 
   it('links to a company or a person with the matching target field', async () => {
@@ -134,7 +144,7 @@ describe('createInternalTask', () => {
 
     expect(
       await createInternalTask(client, { ...INPUT, duplicateCheck: 'any' }),
-    ).toEqual({ created: false });
+    ).toEqual({ created: false, taskId: 'task-0' });
     expect(client.mutation).not.toHaveBeenCalled();
   });
 });

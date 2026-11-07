@@ -114,6 +114,42 @@ describe('createRenewalTasks', () => {
     ).not.toContain('workspaceMembers');
   });
 
+  it('moves a task left open from the previous renewal to the new date', async () => {
+    answerQueries(client, {
+      maintenanceContracts: () => [
+        { ...CONTRACT, renewalTaskCreatedFor: '2025-12-01' },
+      ],
+      taskTargets: () => [
+        {
+          id: 'target-old',
+          task: {
+            id: 'task-old',
+            title: 'Renouveler le contrat Hébergement Boulangerie',
+            status: 'TODO',
+          },
+        },
+      ],
+      workspaceMembers: () => [],
+    });
+
+    const result = await createRenewalTasks(client, {
+      now: NOW,
+      leadOwnerEmail: null,
+    });
+
+    expect(result).toEqual({ created: 0, failures: 0 });
+    expect(mutationNames(client)).toEqual([
+      'updateTask',
+      'updateMaintenanceContract',
+    ]);
+    expect(mutationArgs(client, 'updateTask')).toEqual([
+      { id: 'task-old', data: { dueAt: '2026-12-01T08:00:00.000Z' } },
+    ]);
+    expect(mutationArgs(client, 'updateMaintenanceContract')).toEqual([
+      { id: 'contract-1', data: { renewalTaskCreatedFor: '2026-12-01' } },
+    ]);
+  });
+
   it('skips a contract whose task already exists for this renewal date', async () => {
     given([{ ...CONTRACT, renewalTaskCreatedFor: '2026-12-01' }]);
 
