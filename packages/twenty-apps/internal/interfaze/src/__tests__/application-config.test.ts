@@ -18,7 +18,16 @@ describe('application config', () => {
       SUPABASE_SECRET_KEY: true,
       HUBFAZE_WEBHOOK_SECRET: true,
       LEAD_OWNER_EMAIL: false,
+      SITE_URL: false,
     });
+  });
+
+  it('points the client tracker links to interfaze.fr by default', () => {
+    const siteUrl = application.config.applicationVariables?.SITE_URL;
+
+    expect(siteUrl !== undefined && 'value' in siteUrl && siteUrl.value).toBe(
+      'https://interfaze.fr',
+    );
   });
 
   it('labels and describes every variable', () => {

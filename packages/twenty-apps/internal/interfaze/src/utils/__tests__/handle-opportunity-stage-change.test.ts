@@ -18,6 +18,7 @@ const SETTINGS: SyncSettings = {
   supabaseSecretKey: 'sb_secret_xyz',
   webhookSecret: 'webhook-secret',
   leadOwnerEmail: null,
+  siteUrl: 'https://interfaze.fr',
 };
 
 let client: MockRecordApiClient;

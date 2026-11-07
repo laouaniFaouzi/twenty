@@ -7,6 +7,7 @@ import { PAGE_UNIVERSAL_IDENTIFIER } from 'src/objects/page.object';
 import { PROJECT_UNIVERSAL_IDENTIFIER } from 'src/objects/project.object';
 import { PROJECT_PHASE_UNIVERSAL_IDENTIFIER } from 'src/objects/project-phase.object';
 import { PROJECT_TASK_UNIVERSAL_IDENTIFIER } from 'src/objects/project-task.object';
+import { SYNC_LOG_UNIVERSAL_IDENTIFIER } from 'src/objects/sync-log.object';
 
 const permissionFor = (objectUniversalIdentifier: string) =>
   defaultRole.config?.objectPermissions?.find(
@@ -30,7 +31,6 @@ describe('default role', () => {
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.taskTarget.universalIdentifier,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.noteTarget.universalIdentifier,
       PROJECT_UNIVERSAL_IDENTIFIER,
-      PROJECT_PHASE_UNIVERSAL_IDENTIFIER,
       PAGE_UNIVERSAL_IDENTIFIER,
     ]) {
       expect(permissionFor(objectUniversalIdentifier)).toMatchObject({
@@ -42,14 +42,21 @@ describe('default role', () => {
     }
   });
 
-  it('can move tracker tasks to the trash with their phase, never destroy them', () => {
-    expect(permissionFor(PROJECT_TASK_UNIVERSAL_IDENTIFIER)).toMatchObject({
-      canReadObjectRecords: true,
-      canUpdateObjectRecords: true,
-      canSoftDeleteObjectRecords: true,
-      canDestroyObjectRecords: false,
-    });
-  });
+  it.each([
+    ['tracker tasks', PROJECT_TASK_UNIVERSAL_IDENTIFIER],
+    ['tracker phases', PROJECT_PHASE_UNIVERSAL_IDENTIFIER],
+    ['sync log entries', SYNC_LOG_UNIVERSAL_IDENTIFIER],
+  ])(
+    'can move %s to the trash, never destroy them',
+    (_, objectUniversalIdentifier) => {
+      expect(permissionFor(objectUniversalIdentifier)).toMatchObject({
+        canReadObjectRecords: true,
+        canUpdateObjectRecords: true,
+        canSoftDeleteObjectRecords: true,
+        canDestroyObjectRecords: false,
+      });
+    },
+  );
 
   it('can move site leads records to the trash for the three-year rule, never destroy them', () => {
     for (const objectUniversalIdentifier of [

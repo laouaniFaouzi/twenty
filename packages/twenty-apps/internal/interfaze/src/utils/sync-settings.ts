@@ -3,7 +3,10 @@ export type SyncSettings = {
   supabaseSecretKey: string;
   webhookSecret: string;
   leadOwnerEmail: string | null;
+  siteUrl: string;
 };
+
+const DEFAULT_SITE_URL = 'https://interfaze.fr';
 
 type SyncSettingsResult =
   | { success: true; settings: SyncSettings }
@@ -48,6 +51,10 @@ export const readSyncSettings = (
       supabaseSecretKey: readVariable(env, 'SUPABASE_SECRET_KEY') ?? '',
       webhookSecret: readVariable(env, 'HUBFAZE_WEBHOOK_SECRET') ?? '',
       leadOwnerEmail: readVariable(env, 'LEAD_OWNER_EMAIL'),
+      siteUrl: (readVariable(env, 'SITE_URL') ?? DEFAULT_SITE_URL).replace(
+        /\/+$/,
+        '',
+      ),
     },
   };
 };

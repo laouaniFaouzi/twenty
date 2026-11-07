@@ -18,8 +18,20 @@ describe('readSyncSettings', () => {
         supabaseSecretKey: 'sb_secret_xyz',
         webhookSecret: 'webhook-secret',
         leadOwnerEmail: 'tim@apple.dev',
+        siteUrl: 'https://interfaze.fr',
       },
     });
+  });
+
+  it('reads the site address, without a trailing slash', () => {
+    const result = readSyncSettings({
+      ...COMPLETE_ENV,
+      SITE_URL: 'http://localhost:3000/',
+    });
+
+    expect(result.success && result.settings.siteUrl).toBe(
+      'http://localhost:3000',
+    );
   });
 
   it('drops a trailing slash from the Supabase URL', () => {

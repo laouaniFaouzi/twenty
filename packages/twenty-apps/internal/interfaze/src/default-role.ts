@@ -9,6 +9,7 @@ import { PAGE_UNIVERSAL_IDENTIFIER } from 'src/objects/page.object';
 import { PROJECT_UNIVERSAL_IDENTIFIER } from 'src/objects/project.object';
 import { PROJECT_PHASE_UNIVERSAL_IDENTIFIER } from 'src/objects/project-phase.object';
 import { PROJECT_TASK_UNIVERSAL_IDENTIFIER } from 'src/objects/project-task.object';
+import { SYNC_LOG_UNIVERSAL_IDENTIFIER } from 'src/objects/sync-log.object';
 
 const READ_AND_UPDATE = {
   canReadObjectRecords: true,
@@ -42,15 +43,16 @@ export default defineApplicationRole({
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.taskTarget.universalIdentifier,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.noteTarget.universalIdentifier,
       PROJECT_UNIVERSAL_IDENTIFIER,
-      PROJECT_PHASE_UNIVERSAL_IDENTIFIER,
       PAGE_UNIVERSAL_IDENTIFIER,
     ].map((objectUniversalIdentifier) => ({
       objectUniversalIdentifier,
       ...READ_AND_UPDATE,
     })),
-    // Soft delete serves the trash cascade of tracker phases and the three-year purge of site leads.
+    // Soft delete serves the trash cascade of tracker phases, deletions synced from the site, the three-year purge and the log purge.
     ...[
       PROJECT_TASK_UNIVERSAL_IDENTIFIER,
+      PROJECT_PHASE_UNIVERSAL_IDENTIFIER,
+      SYNC_LOG_UNIVERSAL_IDENTIFIER,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.opportunity.universalIdentifier,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.person.universalIdentifier,
       STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.company.universalIdentifier,

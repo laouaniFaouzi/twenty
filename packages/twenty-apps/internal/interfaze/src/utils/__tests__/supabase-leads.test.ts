@@ -8,6 +8,7 @@ const settingsWithKey = (supabaseSecretKey: string): SyncSettings => ({
   supabaseSecretKey,
   webhookSecret: 'webhook-secret',
   leadOwnerEmail: null,
+  siteUrl: 'https://interfaze.fr',
 });
 
 const respondingWith = (status: number) =>

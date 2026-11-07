@@ -26,6 +26,7 @@ const SETTINGS: SyncSettings = {
   supabaseSecretKey: 'sb_secret_xyz',
   webhookSecret: 'webhook-secret',
   leadOwnerEmail: 'tim@apple.dev',
+  siteUrl: 'https://interfaze.fr',
 };
 
 const LEAD: SiteLead = {

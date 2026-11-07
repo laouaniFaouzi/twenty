@@ -36,5 +36,13 @@ export default defineApplication({
         "E-mail du membre de l'espace qui reçoit les nouvelles demandes et la tâche « Répondre sous 48 h ». Vide : opportunités et tâches sans responsable.",
       isSecret: false,
     },
+    SITE_URL: {
+      universalIdentifier: 'c7447f0d-419c-4af5-8c0b-4cc871aec40f',
+      label: 'Adresse du site',
+      description:
+        "Adresse d'interfaze.fr, utilisée pour les liens de suivi client (adresse + /suivi/ + code).",
+      isSecret: false,
+      value: 'https://interfaze.fr',
+    },
   },
 });
