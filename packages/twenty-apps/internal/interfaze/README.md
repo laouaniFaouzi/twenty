@@ -14,9 +14,15 @@ Chaque lot a son plan dans `docs/superpowers/plans/`.
 | `yarn test` | Tests d'intégration contre un serveur lancé (`TWENTY_API_URL`, `TWENTY_API_KEY`) |
 | `yarn test:e2e` | Test de bout en bout Playwright des pages |
 
-## Synchro des demandes avec interfaze.fr
+## Synchro avec interfaze.fr
 
-Le site poste chaque demande créée, modifiée ou supprimée sur la route `POST /s/hubfaze/site-webhook` (trigger `notify_hubfaze()` du site, via `pg_net`). HubFaze renvoie l'étape des opportunités dans `leads.status` par l'API REST de Supabase.
+Le site poste chaque demande, suivi, phase ou tâche de suivi créé, modifié ou supprimé sur la route `POST /s/hubfaze/site-webhook` (trigger `notify_hubfaze()` du site, via `pg_net`). HubFaze renvoie l'étape des opportunités dans `leads.status`, et ses projets, phases et tâches de suivi dans `trackers`, `tracker_phases` et `tracker_tasks`, par l'API REST de Supabase.
+
+- Une modification faite des deux côtés à la fois : la plus récente l'emporte, enregistrement par enregistrement.
+- Un suivi supprimé sur le site archive le projet ; un projet supprimé dans HubFaze archive le suivi.
+- Chaque échec est noté dans le **Journal de synchro** (objet `syncLog`, vue « Erreurs récentes »), puis retenté par le rapprochement.
+- Le **rapprochement** (`reconcile-site`) passe toutes les 15 minutes : suivis actifs ou modifiés depuis 30 jours, demandes modifiées depuis 30 jours, règle des 3 ans, purge du Journal au-delà de 90 jours.
+- **Import complet** (mise en production) : exécuter la fonction `reconcile-site` à la main avec le corps `{ "full": true }`.
 
 À régler dans Paramètres → Applications → Interfaze → Variables :
 
@@ -26,6 +32,7 @@ Le site poste chaque demande créée, modifiée ou supprimée sur la route `POST
 | `SUPABASE_SECRET_KEY` | Clé secrète du projet (`sb_secret_…` ou clé `service_role`) |
 | `HUBFAZE_WEBHOOK_SECRET` | Secret partagé, identique au secret Vault `hubfaze_webhook_secret` du site |
 | `LEAD_OWNER_EMAIL` | E-mail du membre qui reçoit les demandes |
+| `SITE_URL` | Adresse du site pour les liens de suivi client (par défaut `https://interfaze.fr`) |
 
 Côté site, dans le SQL Editor de Supabase :
 
@@ -34,6 +41,8 @@ select vault.create_secret('https://crm.interfaze.fr/s/hubfaze/site-webhook', 'h
 select vault.create_secret('<le même secret>', 'hubfaze_webhook_secret');
 ```
 
-Sans ces deux secrets, le site n'envoie rien. Sans les variables, la route répond 503.
+Sans ces deux secrets, le site n'envoie rien. Sans les variables, la route répond 503 et rien n'est envoyé au site.
 
-Le test `src/__tests__/leads.integration-test.ts` ne tourne que si `SUPABASE_URL`, `SUPABASE_SECRET_KEY` et `HUBFAZE_WEBHOOK_SECRET` sont définis, avec une base du site joignable et des secrets Vault qui visent le serveur de test.
+Côté serveur HubFaze, les fonctions de l'app ont droit à `APPLICATION_API_RATE_LIMITING_LIMIT` appels par minute (500 par défaut). Si le Journal de synchro montre des erreurs « Limit reached », relever cette valeur dans le `.env` du serveur.
+
+Les tests `src/__tests__/leads.integration-test.ts` et `src/__tests__/trackers.integration-test.ts` ne tournent que si `SUPABASE_URL`, `SUPABASE_SECRET_KEY` et `HUBFAZE_WEBHOOK_SECRET` sont définis, avec une base du site joignable et des secrets Vault qui visent le serveur de test.

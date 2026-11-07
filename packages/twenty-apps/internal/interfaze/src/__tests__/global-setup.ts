@@ -92,6 +92,7 @@ async function setSiteSyncVariables() {
     SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY ?? '',
     HUBFAZE_WEBHOOK_SECRET: process.env.HUBFAZE_WEBHOOK_SECRET ?? '',
     LEAD_OWNER_EMAIL: process.env.LEAD_OWNER_EMAIL ?? 'tim@apple.dev',
+    SITE_URL: process.env.SITE_URL ?? 'http://localhost:3000',
   };
   const metadataClient = new MetadataApiClient();
   const { findOneApplication } = await metadataClient.query({
