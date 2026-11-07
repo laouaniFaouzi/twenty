@@ -262,7 +262,12 @@ describe('handleLeadDeleted', () => {
     await handleLeadDeleted(client, LEAD);
 
     expect(queryFilters(client, 'tasks')).toEqual([
-      { title: { in: [REPLY_TITLE, CLOSE_TITLE] } },
+      {
+        or: [
+          { title: { ilike: 'Répondre à % · IFZ-261106-0042' } },
+          { title: { eq: CLOSE_TITLE } },
+        ],
+      },
     ]);
     expect(mutationNames(client)).toEqual([
       'deleteOpportunity',
@@ -365,5 +370,22 @@ describe('handleLeadDeleted', () => {
     await handleLeadDeleted(client, { ...LEAD, crm_id: null });
 
     expect(client.mutation).not.toHaveBeenCalled();
+  });
+
+  it('purges a lead known only by its id, reference and opportunity, as the reconciliation does', async () => {
+    givenWorld({ tasks: [{ id: 'T1', title: REPLY_TITLE }] });
+
+    await handleLeadDeleted(client, {
+      id: 'L1',
+      ref: 'IFZ-261106-0042',
+      crm_id: 'O1',
+    });
+
+    expect(mutationNames(client)).toEqual([
+      'deleteOpportunity',
+      'deleteTask',
+      'deletePerson',
+      'deleteCompany',
+    ]);
   });
 });

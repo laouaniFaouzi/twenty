@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import onOpportunityStageChanged from 'src/logic-functions/on-opportunity-stage-changed';
+import reconcileSite from 'src/logic-functions/reconcile-site';
 import siteWebhook from 'src/logic-functions/site-webhook';
 
 afterEach(() => {
@@ -55,5 +56,15 @@ describe('on-opportunity-stage-changed', () => {
       eventName: 'opportunity.updated',
       updatedFields: ['interfazeStage'],
     });
+  });
+});
+
+describe('reconcile-site', () => {
+  it('runs every 15 minutes, with time for a full pass', () => {
+    expect(reconcileSite.success).toBe(true);
+    expect(reconcileSite.config.cronTriggerSettings).toEqual({
+      pattern: '*/15 * * * *',
+    });
+    expect(reconcileSite.config.timeoutSeconds).toBe(300);
   });
 });

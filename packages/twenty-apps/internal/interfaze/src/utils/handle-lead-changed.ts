@@ -1,7 +1,14 @@
 import { type InterfazeStage } from 'src/fields/opportunity-interfaze-stage.field';
 import { createInternalTask } from 'src/utils/create-internal-task';
-import { leadNoteTitle, replyTaskTitle } from 'src/utils/handle-lead-created';
-import { type SiteLead, stageAfterSiteStatus } from 'src/utils/lead-mapping';
+import {
+  leadNoteTitle,
+  REPLY_TASK_TITLE_PREFIX,
+} from 'src/utils/handle-lead-created';
+import {
+  escapeLikeWildcards,
+  type SiteLead,
+  stageAfterSiteStatus,
+} from 'src/utils/lead-mapping';
 import {
   getEdgeNodes,
   type RecordApiClient,
@@ -187,17 +194,38 @@ const deleteRecordsByTitle = async (
   }
 };
 
+export type PurgedLead = Pick<SiteLead, 'id' | 'ref' | 'crm_id'>;
+
 // The purge keeps a privacy promise: the app's own tasks carry the prospect's name.
-const deleteLeadTasks = (client: RecordApiClient, lead: SiteLead) =>
-  deleteRecordsByTitle(client, {
-    root: 'tasks',
-    mutationName: 'deleteTask',
-    titles: [replyTaskTitle(lead), closeOnSiteTaskTitle(lead.ref)],
+// They are found by reference, so a lead rebuilt from its opportunity (no name) is purged too.
+const deleteLeadTasks = async (client: RecordApiClient, ref: string) => {
+  const response = await client.query({
+    tasks: {
+      __args: {
+        filter: {
+          or: [
+            {
+              title: {
+                ilike: `${REPLY_TASK_TITLE_PREFIX}% · ${escapeLikeWildcards(ref)}`,
+              },
+            },
+            { title: { eq: closeOnSiteTaskTitle(ref) } },
+          ],
+        },
+        first: 20,
+      },
+      edges: { node: { id: true } },
+    },
   });
+
+  for (const { id } of getEdgeNodes<{ id: string }>(response, 'tasks')) {
+    await deleteRecord(client, 'deleteTask', id);
+  }
+};
 
 export const handleLeadDeleted = async (
   client: RecordApiClient,
-  lead: SiteLead,
+  lead: PurgedLead,
 ): Promise<void> => {
   const opportunity = await findLeadOpportunity(client, lead);
 
@@ -207,7 +235,7 @@ export const handleLeadDeleted = async (
       mutationName: 'deleteNote',
       titles: [leadNoteTitle(lead.ref)],
     });
-    await deleteLeadTasks(client, lead);
+    await deleteLeadTasks(client, lead.ref);
 
     return;
   }
@@ -218,7 +246,7 @@ export const handleLeadDeleted = async (
   }
 
   await deleteRecord(client, 'deleteOpportunity', opportunity.id);
-  await deleteLeadTasks(client, lead);
+  await deleteLeadTasks(client, lead.ref);
 
   const { pointOfContactId: personId, companyId } = opportunity;
 
