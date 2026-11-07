@@ -259,14 +259,14 @@ describe('runReconciliation · trackers', () => {
       projectPhases: () => [
         { id: 'PH1', siteId: 'S-PH1', siteUpdatedAt: OLD },
         { id: 'PH-gone', siteId: 'S-gone', siteUpdatedAt: OLD },
-        { id: 'PH-new', siteId: null, siteUpdatedAt: null },
+        { id: 'PH-new', siteId: '', siteUpdatedAt: null },
         {
           id: 'PH-fresh',
           siteId: 'S-fresh',
           siteUpdatedAt: '2026-11-07T10:00:05.000Z',
         },
       ],
-      projectTasks: () => [{ id: 'TA-new', siteId: null, siteUpdatedAt: null }],
+      projectTasks: () => [{ id: 'TA-new', siteId: '', siteUpdatedAt: null }],
     });
 
     await run();
@@ -290,7 +290,7 @@ describe('runReconciliation · trackers', () => {
     await run();
 
     expect(queryFilters(client, 'projects')).toContainEqual({
-      siteTrackerId: { is: 'NULL' },
+      or: [{ siteTrackerId: { is: 'NULL' } }, { siteTrackerId: { eq: '' } }],
       offer: { is: 'NOT_NULL' },
       status: { neq: 'ARCHIVED' },
     });
@@ -313,7 +313,7 @@ describe('runReconciliation · trackers', () => {
     });
     givenHubFaze({
       projects: (filter) =>
-        JSON.stringify(filter).includes('"is":"NOT_NULL"')
+        JSON.stringify(filter).includes('"neq":""')
           ? [
               { id: 'P8', siteTrackerId: 'T8' },
               { id: 'P9', siteTrackerId: 'T9' },
@@ -416,7 +416,7 @@ describe('runReconciliation · leads', () => {
     await run();
 
     expect(queryFilters(client, 'opportunities')).toContainEqual({
-      siteLeadId: { is: 'NOT_NULL' },
+      siteLeadId: { neq: '' },
       receivedAt: { lt: '2023-11-07T10:00:00.000Z' },
       interfazeStage: { neq: 'WON' },
     });

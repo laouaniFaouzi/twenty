@@ -89,6 +89,12 @@ describe('handleOpportunityStageChange', () => {
     expect(patchLead).not.toHaveBeenCalled();
   });
 
+  it('never calls the site for an opportunity whose site lead id is an empty text', async () => {
+    await run(stageChange('DISCUSSION', 'WON', { siteLeadId: '' }));
+
+    expect(patchLead).not.toHaveBeenCalled();
+  });
+
   it('never calls the site while the sync is not configured', async () => {
     await run(
       stageChange('DISCUSSION', 'WON', { siteLeadStatusSeen: 'in_progress' }),

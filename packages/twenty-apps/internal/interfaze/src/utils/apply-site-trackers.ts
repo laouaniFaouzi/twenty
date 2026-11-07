@@ -2,6 +2,7 @@ import { type Offer, OFFER_LABELS } from 'src/constants/offer';
 import { type ProjectStatus } from 'src/objects/project.object';
 import { type ProjectTaskStatus } from 'src/objects/project-task.object';
 import { findOrCreateCompany } from 'src/utils/handle-lead-created';
+import { presentText } from 'src/utils/present-text';
 import {
   pushPhase,
   pushProject,
@@ -125,7 +126,18 @@ const findProject = async (
     },
   });
 
-  return pickRecord(getEdgeNodes<ProjectRecord>(response, 'projects'), row);
+  const project = pickRecord(
+    getEdgeNodes<ProjectRecord>(response, 'projects'),
+    row,
+  );
+
+  return project === null
+    ? null
+    : {
+        ...project,
+        siteTrackerId: presentText(project.siteTrackerId),
+        syncHash: presentText(project.syncHash),
+      };
 };
 
 const findPhase = async (
@@ -159,7 +171,21 @@ const findPhase = async (
     },
   });
 
-  return pickRecord(getEdgeNodes<PhaseRecord>(response, 'projectPhases'), row);
+  const phase = pickRecord(
+    getEdgeNodes<PhaseRecord>(response, 'projectPhases'),
+    row,
+  );
+
+  return phase === null
+    ? null
+    : {
+        ...phase,
+        siteId: presentText(phase.siteId),
+        syncHash: presentText(phase.syncHash),
+        project: !phase.project
+          ? null
+          : { siteTrackerId: presentText(phase.project.siteTrackerId) },
+      };
 };
 
 const findTask = async (
@@ -196,7 +222,21 @@ const findTask = async (
     },
   });
 
-  return pickRecord(getEdgeNodes<TaskRecord>(response, 'projectTasks'), row);
+  const task = pickRecord(
+    getEdgeNodes<TaskRecord>(response, 'projectTasks'),
+    row,
+  );
+
+  return task === null
+    ? null
+    : {
+        ...task,
+        siteId: presentText(task.siteId),
+        syncHash: presentText(task.syncHash),
+        phase: !task.phase
+          ? null
+          : { ...task.phase, siteId: presentText(task.phase.siteId) },
+      };
 };
 
 const updateRecord = async (

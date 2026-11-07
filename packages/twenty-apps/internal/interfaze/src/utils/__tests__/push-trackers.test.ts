@@ -177,7 +177,7 @@ const taskEvent = (name: string, properties: Record<string, unknown> = {}) =>
 
 describe('project to tracker', () => {
   it('creates the tracker of a new project with an offer, then records the link', async () => {
-    given({ project: () => PROJECT });
+    given({ projects: () => [PROJECT] });
 
     await projectEvent('updated', { updatedFields: ['companyId'] });
 
@@ -204,8 +204,19 @@ describe('project to tracker', () => {
     ]);
   });
 
+  it('reads an empty text field as no tracker yet, as Twenty stores it', async () => {
+    given({
+      projects: () => [{ ...PROJECT, siteTrackerId: '', syncHash: '' }],
+    });
+
+    await projectEvent('updated', { updatedFields: ['name'] });
+
+    expect(rest.insertSiteTracker).toHaveBeenCalledTimes(1);
+    expect(rest.updateSiteTracker).not.toHaveBeenCalled();
+  });
+
   it('reads the tracker another run already created instead of inserting it twice', async () => {
-    given({ project: () => PROJECT });
+    given({ projects: () => [PROJECT] });
     rest.insertSiteTracker.mockRejectedValue(
       Object.assign(new Error('Supabase a refusé POST trackers (409)'), {
         status: 409,
@@ -229,7 +240,7 @@ describe('project to tracker', () => {
     ['without an offer', { ...PROJECT, offer: null }],
     ['archived and never sent', { ...PROJECT, status: 'ARCHIVED' }],
   ])('sends nothing for a project %s', async (_, project) => {
-    given({ project: () => project });
+    given({ projects: () => [project] });
 
     await projectEvent('updated', { updatedFields: ['status'] });
 
@@ -239,10 +250,12 @@ describe('project to tracker', () => {
 
   it('sends a new company name to the tracker', async () => {
     given({
-      project: () => ({
-        ...SYNCED_PROJECT,
-        company: { name: 'Martin & Fils' },
-      }),
+      projects: () => [
+        {
+          ...SYNCED_PROJECT,
+          company: { name: 'Martin & Fils' },
+        },
+      ],
     });
 
     await projectEvent('updated', { updatedFields: ['companyId'] });
@@ -258,7 +271,7 @@ describe('project to tracker', () => {
   });
 
   it('sends nothing back for a write that came from the site', async () => {
-    given({ project: () => SYNCED_PROJECT });
+    given({ projects: () => [SYNCED_PROJECT] });
 
     await projectEvent('updated', { updatedFields: ['status'] });
 
@@ -277,11 +290,13 @@ describe('project to tracker', () => {
 
   it('archives the project when its tracker is gone from the site', async () => {
     given({
-      project: () => ({
-        ...SYNCED_PROJECT,
-        name: 'Nouveau nom',
-        company: null,
-      }),
+      projects: () => [
+        {
+          ...SYNCED_PROJECT,
+          name: 'Nouveau nom',
+          company: null,
+        },
+      ],
     });
     rest.updateSiteTracker.mockResolvedValue(null);
 
@@ -301,7 +316,7 @@ describe('project to tracker', () => {
   });
 
   it('sends a restored project even though its hash did not move', async () => {
-    given({ project: () => SYNCED_PROJECT });
+    given({ projects: () => [SYNCED_PROJECT] });
 
     await projectEvent('restored');
 
@@ -315,7 +330,7 @@ describe('project to tracker', () => {
 
 describe('phases and tasks to the site', () => {
   it('creates a new phase on its HubFaze id and records its site id', async () => {
-    given({ projectPhase: () => PHASE });
+    given({ projectPhases: () => [PHASE] });
 
     await phaseEvent('created');
 
@@ -337,13 +352,37 @@ describe('phases and tasks to the site', () => {
     ]);
   });
 
+  it('creates a phase whose site id is an empty text, and skips one whose tracker id is empty', async () => {
+    given({ projectPhases: () => [{ ...PHASE, siteId: '', syncHash: '' }] });
+
+    await phaseEvent('created');
+
+    expect(rest.updateSiteRow).not.toHaveBeenCalled();
+    expect(rest.upsertSitePhase).toHaveBeenCalledTimes(1);
+
+    given({
+      projectPhases: () => [
+        {
+          ...PHASE,
+          project: { id: 'P1', siteTrackerId: '' },
+        },
+      ],
+    });
+
+    await phaseEvent('created');
+
+    expect(rest.upsertSitePhase).toHaveBeenCalledTimes(1);
+  });
+
   it('updates a phase the site already knows by its site id', async () => {
     given({
-      projectPhase: () => ({
-        ...PHASE,
-        siteId: 'S-PH1',
-        name: 'On échange (bis)',
-      }),
+      projectPhases: () => [
+        {
+          ...PHASE,
+          siteId: 'S-PH1',
+          name: 'On échange (bis)',
+        },
+      ],
     });
 
     await phaseEvent('updated', { updatedFields: ['name'] });
@@ -363,10 +402,12 @@ describe('phases and tasks to the site', () => {
 
   it('leaves a phase whose tracker is not on the site yet', async () => {
     given({
-      projectPhase: () => ({
-        ...PHASE,
-        project: { id: 'P1', siteTrackerId: null },
-      }),
+      projectPhases: () => [
+        {
+          ...PHASE,
+          project: { id: 'P1', siteTrackerId: null },
+        },
+      ],
     });
 
     await phaseEvent('created');
@@ -376,7 +417,7 @@ describe('phases and tasks to the site', () => {
 
   it('leaves a task whose phase is not on the site yet, without failing', async () => {
     given({
-      projectTask: () => ({ ...TASK, phase: { id: 'PH1', siteId: null } }),
+      projectTasks: () => [{ ...TASK, phase: { id: 'PH1', siteId: null } }],
     });
 
     await taskEvent('created');
@@ -386,7 +427,7 @@ describe('phases and tasks to the site', () => {
   });
 
   it('upserts a task delivered twice on the same HubFaze id', async () => {
-    given({ projectTask: () => TASK });
+    given({ projectTasks: () => [TASK] });
 
     await taskEvent('created');
     await taskEvent('created');
@@ -399,7 +440,7 @@ describe('phases and tasks to the site', () => {
 
   it('sends a checked task, keeping its decimal position', async () => {
     given({
-      projectTask: () => ({ ...TASK, siteId: 'S-TA1', status: 'DONE' }),
+      projectTasks: () => [{ ...TASK, siteId: 'S-TA1', status: 'DONE' }],
     });
 
     await taskEvent('updated', { updatedFields: ['status'] });
@@ -420,13 +461,15 @@ describe('phases and tasks to the site', () => {
 
   it('sends nothing for a task whose synced fields did not change', async () => {
     given({
-      projectTask: () => ({
-        ...TASK,
-        siteId: 'S-TA1',
-        syncHash: syncHashOf(
-          taskFieldsFromProjectTask({ ...TASK, status: 'TODO' }, 'S-PH1'),
-        ),
-      }),
+      projectTasks: () => [
+        {
+          ...TASK,
+          siteId: 'S-TA1',
+          syncHash: syncHashOf(
+            taskFieldsFromProjectTask({ ...TASK, status: 'TODO' }, 'S-PH1'),
+          ),
+        },
+      ],
     });
 
     await taskEvent('updated', { updatedFields: ['status'] });
@@ -435,7 +478,7 @@ describe('phases and tasks to the site', () => {
   });
 
   it('never sends internal fields', async () => {
-    given({ projectTask: () => ({ ...TASK, siteId: 'S-TA1' }) });
+    given({ projectTasks: () => [{ ...TASK, siteId: 'S-TA1' }] });
 
     await taskEvent('updated', {
       updatedFields: ['assigneeId', 'dueDate', 'siteUpdatedAt', 'syncHash'],
@@ -443,6 +486,31 @@ describe('phases and tasks to the site', () => {
 
     expect(client.query).not.toHaveBeenCalled();
     expect(rest.updateSiteRow).not.toHaveBeenCalled();
+  });
+
+  it('skips a record deleted before its event is processed, without noting a failure', async () => {
+    given({
+      projects: () => [],
+      projectPhases: () => [],
+      projectTasks: () => [],
+    });
+
+    await projectEvent('updated', { updatedFields: ['name'] });
+    await phaseEvent('updated', { updatedFields: ['name'] });
+    await taskEvent('updated', { updatedFields: ['name'] });
+
+    expect(mutationNames(client)).toEqual([]);
+    expect(rest.updateSiteTracker).not.toHaveBeenCalled();
+  });
+
+  it('ignores records destroyed for good, which no longer exist on either side', async () => {
+    await projectEvent('destroyed');
+    await phaseEvent('destroyed');
+    await taskEvent('destroyed');
+
+    expect(client.query).not.toHaveBeenCalled();
+    expect(client.mutation).not.toHaveBeenCalled();
+    expect(rest.deleteSiteRowByCrmId).not.toHaveBeenCalled();
   });
 
   it('deletes a phase and a task on the site by their HubFaze id', async () => {
@@ -456,7 +524,7 @@ describe('phases and tasks to the site', () => {
   });
 
   it('creates a restored phase again instead of updating the deleted site row', async () => {
-    given({ projectPhase: () => ({ ...PHASE, siteId: 'S-OLD' }) });
+    given({ projectPhases: () => [{ ...PHASE, siteId: 'S-OLD' }] });
 
     await phaseEvent('restored');
 
@@ -469,7 +537,7 @@ describe('phases and tasks to the site', () => {
 
   it('notes a failed call in the Journal de synchro without throwing', async () => {
     given({
-      projectTask: () => ({ ...TASK, siteId: 'S-TA1', status: 'DONE' }),
+      projectTasks: () => [{ ...TASK, siteId: 'S-TA1', status: 'DONE' }],
     });
     rest.updateSiteRow.mockRejectedValue(
       new Error('Supabase a refusé PATCH tracker_tasks (500)'),
@@ -495,11 +563,9 @@ describe('phases and tasks to the site', () => {
 describe('pushProjectTree', () => {
   it('sends the tracker, then every phase, then every task', async () => {
     given({
-      project: () => SYNCED_PROJECT,
-      projectPhases: () => [{ id: 'PH1' }],
-      projectTasks: () => [{ id: 'TA1' }],
-      projectPhase: () => PHASE,
-      projectTask: () => TASK,
+      projects: () => [SYNCED_PROJECT],
+      projectPhases: () => [PHASE],
+      projectTasks: () => [TASK],
     });
 
     await pushProjectTree(client, 'P1', deps);
@@ -513,10 +579,9 @@ describe('pushProjectTree', () => {
 
   it('sends the whole tree of a project that receives its offer', async () => {
     given({
-      project: () => SYNCED_PROJECT,
-      projectPhases: () => [{ id: 'PH1' }],
+      projects: () => [SYNCED_PROJECT],
+      projectPhases: () => [PHASE],
       projectTasks: () => [],
-      projectPhase: () => PHASE,
     });
 
     await projectEvent('updated', { updatedFields: ['offer'] });

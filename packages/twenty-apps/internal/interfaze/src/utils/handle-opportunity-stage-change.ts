@@ -5,6 +5,7 @@ import {
   getEdgeNodes,
   type RecordApiClient,
 } from 'src/utils/record-api-client';
+import { presentText } from 'src/utils/present-text';
 import { recordSyncFailure } from 'src/utils/record-sync-failure';
 import { type patchSiteLead } from 'src/utils/supabase-leads';
 import { type SyncSettings } from 'src/utils/sync-settings';
@@ -81,7 +82,7 @@ export const handleOpportunityStageChange = async (
     await closeReplyTasks(client, recordId);
   }
 
-  const siteLeadId = after.siteLeadId ?? null;
+  const siteLeadId = presentText(after.siteLeadId);
   const status = statusForStage(stage);
 
   // A status already seen came from the site itself: sending it back would loop.

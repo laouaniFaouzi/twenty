@@ -2,6 +2,7 @@ import { type Offer } from 'src/constants/offer';
 import { type SyncEntity } from 'src/objects/sync-log.object';
 import { type ProjectStatus } from 'src/objects/project.object';
 import { type ProjectTaskStatus } from 'src/objects/project-task.object';
+import { presentText } from 'src/utils/present-text';
 import {
   getEdgeNodes,
   type RecordApiClient,
@@ -139,59 +140,113 @@ const TRACKER_LINK_LABEL = 'Suivi client';
 const readProject = async (
   client: RecordApiClient,
   projectId: string,
-): Promise<ProjectForSync | null> =>
-  ((
-    await client.query({
-      project: {
-        __args: { filter: { id: { eq: projectId } } },
-        id: true,
-        name: true,
-        offer: true,
-        status: true,
-        siteTrackerId: true,
-        syncHash: true,
-        company: { name: true },
-      },
-    })
-  ).project as ProjectForSync | null | undefined) ?? null;
+): Promise<ProjectForSync | null> => {
+  const project =
+    getEdgeNodes<ProjectForSync>(
+      await client.query({
+        projects: {
+          __args: { filter: { id: { eq: projectId } }, first: 1 },
+          edges: {
+            node: {
+              id: true,
+              name: true,
+              offer: true,
+              status: true,
+              siteTrackerId: true,
+              syncHash: true,
+              company: { name: true },
+            },
+          },
+        },
+      }),
+      'projects',
+    )[0] ?? null;
+
+  return project === null
+    ? null
+    : {
+        ...project,
+        siteTrackerId: presentText(project.siteTrackerId),
+        syncHash: presentText(project.syncHash),
+      };
+};
 
 const readPhase = async (
   client: RecordApiClient,
   phaseId: string,
-): Promise<PhaseForSync | null> =>
-  ((
-    await client.query({
-      projectPhase: {
-        __args: { filter: { id: { eq: phaseId } } },
-        id: true,
-        name: true,
-        position: true,
-        siteId: true,
-        syncHash: true,
-        project: { id: true, siteTrackerId: true },
-      },
-    })
-  ).projectPhase as PhaseForSync | null | undefined) ?? null;
+): Promise<PhaseForSync | null> => {
+  const phase =
+    getEdgeNodes<PhaseForSync>(
+      await client.query({
+        projectPhases: {
+          __args: { filter: { id: { eq: phaseId } }, first: 1 },
+          edges: {
+            node: {
+              id: true,
+              name: true,
+              position: true,
+              siteId: true,
+              syncHash: true,
+              project: { id: true, siteTrackerId: true },
+            },
+          },
+        },
+      }),
+      'projectPhases',
+    )[0] ?? null;
+
+  return phase === null
+    ? null
+    : {
+        ...phase,
+        siteId: presentText(phase.siteId),
+        syncHash: presentText(phase.syncHash),
+        project: !phase.project
+          ? null
+          : {
+              ...phase.project,
+              siteTrackerId: presentText(phase.project.siteTrackerId),
+            },
+      };
+};
 
 const readTask = async (
   client: RecordApiClient,
   taskId: string,
-): Promise<TaskForSync | null> =>
-  ((
-    await client.query({
-      projectTask: {
-        __args: { filter: { id: { eq: taskId } } },
-        id: true,
-        name: true,
-        description: true,
-        status: true,
-        position: true,
-        siteId: true,
-        syncHash: true,
-        phase: { id: true, siteId: true },
-      },
-    })
-  ).projectTask as TaskForSync | null | undefined) ?? null;
+): Promise<TaskForSync | null> => {
+  const task =
+    getEdgeNodes<TaskForSync>(
+      await client.query({
+        projectTasks: {
+          __args: { filter: { id: { eq: taskId } }, first: 1 },
+          edges: {
+            node: {
+              id: true,
+              name: true,
+              description: true,
+              status: true,
+              position: true,
+              siteId: true,
+              syncHash: true,
+              phase: { id: true, siteId: true },
+            },
+          },
+        },
+      }),
+      'projectTasks',
+    )[0] ?? null;
+
+  return task === null
+    ? null
+    : {
+        ...task,
+        siteId: presentText(task.siteId),
+        syncHash: presentText(task.syncHash),
+        phase: !task.phase
+          ? null
+          : { ...task.phase, siteId: presentText(task.phase.siteId) },
+      };
+};
 
 const updateRecord = async (
   client: RecordApiClient,
@@ -474,12 +529,19 @@ const runSyncEvent = async (
   }
 };
 
+const SYNCED_OPERATIONS = ['created', 'updated', 'deleted', 'restored'];
+
 export const handleTrackerSyncEvent = async (
   client: RecordApiClient,
   event: TrackerSyncEvent,
   deps: TrackerSyncDependencies,
 ): Promise<void> => {
   const operation = event.name.split('.')[1];
+
+  // A destroyed record left the trash: its deletion already reached the site.
+  if (!SYNCED_OPERATIONS.includes(operation)) {
+    return;
+  }
 
   if (
     operation === 'updated' &&

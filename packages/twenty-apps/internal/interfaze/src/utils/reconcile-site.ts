@@ -15,6 +15,7 @@ import { type SiteWebhookDependencies } from 'src/utils/handle-site-webhook';
 import { type SiteLead, statusForStage } from 'src/utils/lead-mapping';
 import { pushPhase, pushProjectTree, pushTask } from 'src/utils/push-trackers';
 import { type RecordApiClient } from 'src/utils/record-api-client';
+import { presentText } from 'src/utils/present-text';
 import { recordSyncFailure } from 'src/utils/record-sync-failure';
 import { type SiteLeadStatus } from 'src/utils/supabase-leads';
 import {
@@ -176,17 +177,19 @@ export const runReconciliation = async (
         });
 
         for (const record of records) {
-          if (record.siteId === null) {
+          const siteId = presentText(record.siteId);
+
+          if (siteId === null) {
             await attempt(entity, null, record.id, () =>
               push(client, record.id, trackerDeps),
             );
           } else if (
-            !knownSiteIds.has(record.siteId) &&
+            !knownSiteIds.has(siteId) &&
             // Synced after this pass read the site: not missing, just newer than the read.
             record.siteUpdatedAt !== null &&
             Date.parse(record.siteUpdatedAt) < now.getTime()
           ) {
-            await attempt(entity, record.siteId, record.id, () =>
+            await attempt(entity, siteId, record.id, () =>
               client.mutation({
                 [deletion]: { __args: { id: record.id }, id: true },
               }),
@@ -203,7 +206,8 @@ export const runReconciliation = async (
     'projects',
     {
       filter: {
-        siteTrackerId: { is: 'NULL' },
+        // Twenty stores an empty text field as '', so "no tracker" is either.
+        or: [{ siteTrackerId: { is: 'NULL' } }, { siteTrackerId: { eq: '' } }],
         offer: { is: 'NOT_NULL' },
         status: { neq: 'ARCHIVED' },
       },
@@ -222,7 +226,7 @@ export const runReconciliation = async (
       'projects',
       {
         filter: {
-          siteTrackerId: { is: 'NOT_NULL' },
+          siteTrackerId: { neq: '' },
           status: { neq: 'ARCHIVED' },
         },
         node: { id: true, siteTrackerId: true },
@@ -305,7 +309,7 @@ export const runReconciliation = async (
     requestRef: string | null;
   }>(client, 'opportunities', {
     filter: {
-      siteLeadId: { is: 'NOT_NULL' },
+      siteLeadId: { neq: '' },
       receivedAt: { lt: yearsBefore(now, LEAD_RETENTION_IN_YEARS) },
       interfazeStage: { neq: 'WON' },
     },
