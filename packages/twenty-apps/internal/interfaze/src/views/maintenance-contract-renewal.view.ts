@@ -1,4 +1,9 @@
-import { defineView, ViewFilterOperand, ViewType } from 'twenty-sdk/define';
+import {
+  defineView,
+  ViewFilterGroupLogicalOperator,
+  ViewFilterOperand,
+  ViewType,
+} from 'twenty-sdk/define';
 
 import { COMPANY_ON_MAINTENANCE_CONTRACT_FIELD_UNIVERSAL_IDENTIFIER } from 'src/fields/company-on-maintenance-contract.field';
 import {
@@ -9,6 +14,10 @@ import {
   MAINTENANCE_CONTRACT_TYPE_FIELD_UNIVERSAL_IDENTIFIER,
   MAINTENANCE_CONTRACT_UNIVERSAL_IDENTIFIER,
 } from 'src/objects/maintenance-contract.object';
+import { relativeDate } from 'src/page-layouts/utils/chart-filters';
+
+const RENEWAL_WINDOW_FILTER_GROUP_UNIVERSAL_IDENTIFIER =
+  '62d9c4dc-e706-4327-8991-0b4854919159';
 
 export default defineView({
   universalIdentifier: '78dd072a-fe68-43d3-a2df-204b8ad21b84',
@@ -32,11 +41,36 @@ export default defineView({
       operand: ViewFilterOperand.IS,
       value: ['ACTIVE'],
     },
+    // Late renewals and today's stay listed until the renewal date moves on.
+    {
+      universalIdentifier: '09989bf5-0203-422b-82a3-a9db6d2a471e',
+      fieldMetadataUniversalIdentifier: MAINTENANCE_CONTRACT_RENEWAL_DATE_FIELD_UNIVERSAL_IDENTIFIER,
+      operand: ViewFilterOperand.IS_IN_PAST,
+      value: '',
+      viewFilterGroupUniversalIdentifier: RENEWAL_WINDOW_FILTER_GROUP_UNIVERSAL_IDENTIFIER,
+      positionInViewFilterGroup: 0,
+    },
+    {
+      universalIdentifier: '68fb0dea-a2c4-4811-b4a6-649524eeb5fb',
+      fieldMetadataUniversalIdentifier: MAINTENANCE_CONTRACT_RENEWAL_DATE_FIELD_UNIVERSAL_IDENTIFIER,
+      operand: ViewFilterOperand.IS_RELATIVE,
+      value: relativeDate('THIS', 1, 'DAY'),
+      viewFilterGroupUniversalIdentifier: RENEWAL_WINDOW_FILTER_GROUP_UNIVERSAL_IDENTIFIER,
+      positionInViewFilterGroup: 1,
+    },
     {
       universalIdentifier: '5c9c931e-e6df-438f-8372-a367b61f90b7',
       fieldMetadataUniversalIdentifier: MAINTENANCE_CONTRACT_RENEWAL_DATE_FIELD_UNIVERSAL_IDENTIFIER,
       operand: ViewFilterOperand.IS_RELATIVE,
-      value: 'NEXT_30_DAY',
+      value: relativeDate('NEXT', 30, 'DAY'),
+      viewFilterGroupUniversalIdentifier: RENEWAL_WINDOW_FILTER_GROUP_UNIVERSAL_IDENTIFIER,
+      positionInViewFilterGroup: 2,
+    },
+  ],
+  filterGroups: [
+    {
+      universalIdentifier: RENEWAL_WINDOW_FILTER_GROUP_UNIVERSAL_IDENTIFIER,
+      logicalOperator: ViewFilterGroupLogicalOperator.OR,
     },
   ],
 });

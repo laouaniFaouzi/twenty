@@ -87,7 +87,7 @@ describe('Pages page', () => {
       type: NavigationMenuItemType.PAGE_LAYOUT,
       pageLayoutUniversalIdentifier: PAGES_PAGE_LAYOUT_UNIVERSAL_IDENTIFIER,
       name: 'Pages',
-      position: 4,
+      position: 5,
     });
   });
 });

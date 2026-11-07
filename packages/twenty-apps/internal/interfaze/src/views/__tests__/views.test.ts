@@ -1,11 +1,13 @@
 import {
   NavigationMenuItemType,
+  ViewFilterGroupLogicalOperator,
   ViewFilterOperand,
   ViewSortDirection,
   ViewType,
 } from 'twenty-sdk/define';
 import { describe, expect, it } from 'vitest';
 
+import { PILOTAGE_PAGE_LAYOUT_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
 import { OPPORTUNITY_INTERFAZE_STAGE_FIELD_UNIVERSAL_IDENTIFIER } from 'src/fields/opportunity-interfaze-stage.field';
 import { OPPORTUNITY_RECEIVED_AT_FIELD_UNIVERSAL_IDENTIFIER } from 'src/fields/opportunity-received-at.field';
 import {
@@ -17,6 +19,7 @@ import {
   TRACKER_TASKS_ON_PROJECT_FIELD_UNIVERSAL_IDENTIFIER,
 } from 'src/fields/project-on-project-task.field';
 import maintenanceNavigationMenuItem from 'src/navigation-menu-items/maintenance.navigation-menu-item';
+import pilotageNavigationMenuItem from 'src/navigation-menu-items/pilotage.navigation-menu-item';
 import pipelineNavigationMenuItem from 'src/navigation-menu-items/pipeline.navigation-menu-item';
 import projectTasksNavigationMenuItem from 'src/navigation-menu-items/project-tasks.navigation-menu-item';
 import projectsNavigationMenuItem from 'src/navigation-menu-items/projects.navigation-menu-item';
@@ -123,13 +126,34 @@ describe('Interfaze views', () => {
     ]);
   });
 
-  it('shows active contracts, and those renewing within 30 days', () => {
+  it('shows active contracts', () => {
     expect(filtersOf(maintenanceContractActiveView)).toEqual([
       { operand: ViewFilterOperand.IS, value: ['ACTIVE'] },
     ]);
-    expect(filtersOf(maintenanceContractRenewalView)).toEqual([
-      { operand: ViewFilterOperand.IS, value: ['ACTIVE'] },
-      { operand: ViewFilterOperand.IS_RELATIVE, value: 'NEXT_30_DAY' },
+  });
+
+  it('shows contracts to renew within 30 days, late ones and today included', () => {
+    const groups = maintenanceContractRenewalView.config.filterGroups ?? [];
+
+    expect(groups).toEqual([
+      {
+        universalIdentifier: expect.any(String),
+        logicalOperator: ViewFilterGroupLogicalOperator.OR,
+      },
+    ]);
+    expect(
+      (maintenanceContractRenewalView.config.filters ?? []).map(
+        ({ operand, value, viewFilterGroupUniversalIdentifier }) => [
+          operand,
+          value,
+          viewFilterGroupUniversalIdentifier === groups[0]?.universalIdentifier,
+        ],
+      ),
+    ).toEqual([
+      [ViewFilterOperand.IS, ['ACTIVE'], false],
+      [ViewFilterOperand.IS_IN_PAST, '', true],
+      [ViewFilterOperand.IS_RELATIVE, 'THIS_1_DAY;;Europe/Paris;;MONDAY;;', true],
+      [ViewFilterOperand.IS_RELATIVE, 'NEXT_30_DAY;;Europe/Paris;;MONDAY;;', true],
     ]);
   });
 });
@@ -196,21 +220,29 @@ describe('Project record page', () => {
 });
 
 describe('Navigation', () => {
-  it('opens the pipeline view first, then the Interfaze objects', () => {
+  it('opens Pilotage first, then the pipeline view and the Interfaze objects', () => {
+    expect(pilotageNavigationMenuItem.success).toBe(true);
+    expect(pilotageNavigationMenuItem.config).toMatchObject({
+      type: NavigationMenuItemType.PAGE_LAYOUT,
+      pageLayoutUniversalIdentifier: PILOTAGE_PAGE_LAYOUT_UNIVERSAL_IDENTIFIER,
+      name: 'Pilotage',
+      icon: 'IconLayoutDashboard',
+      position: 0,
+    });
     expect(pipelineNavigationMenuItem.config).toMatchObject({
       type: NavigationMenuItemType.VIEW,
       viewUniversalIdentifier: OPPORTUNITY_PIPELINE_VIEW_UNIVERSAL_IDENTIFIER,
       name: 'Pipeline',
-      position: 0,
+      position: 1,
     });
     expect(
       [projectsNavigationMenuItem, projectTasksNavigationMenuItem, maintenanceNavigationMenuItem].map(
         (item) => [item.success, item.config.type, item.config.position],
       ),
     ).toEqual([
-      [true, NavigationMenuItemType.OBJECT, 1],
       [true, NavigationMenuItemType.OBJECT, 2],
       [true, NavigationMenuItemType.OBJECT, 3],
+      [true, NavigationMenuItemType.OBJECT, 4],
     ]);
   });
 });
