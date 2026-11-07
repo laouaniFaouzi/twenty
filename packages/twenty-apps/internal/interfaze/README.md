@@ -45,4 +45,4 @@ Sans ces deux secrets, le site n'envoie rien. Sans les variables, la route répo
 
 Côté serveur HubFaze, les fonctions de l'app ont droit à `APPLICATION_API_RATE_LIMITING_LIMIT` appels par minute (500 par défaut). Si le Journal de synchro montre des erreurs « Limit reached », relever cette valeur dans le `.env` du serveur.
 
-Les tests `src/__tests__/leads.integration-test.ts` et `src/__tests__/trackers.integration-test.ts` ne tournent que si `SUPABASE_URL`, `SUPABASE_SECRET_KEY` et `HUBFAZE_WEBHOOK_SECRET` sont définis, avec une base du site joignable et des secrets Vault qui visent le serveur de test.
+Les tests `src/__tests__/leads.integration-test.ts` et `src/__tests__/trackers.integration-test.ts` ne tournent que si `SUPABASE_URL`, `SUPABASE_SECRET_KEY` et `HUBFAZE_WEBHOOK_SECRET` sont définis, avec une base du site joignable et des secrets Vault qui visent le serveur de test. Ces tests interrogent souvent l'API avec la clé de test : sur le serveur de test, régler `API_RATE_LIMITING_LONG_LIMIT=1000` (100 appels par minute par défaut).
