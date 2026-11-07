@@ -26,10 +26,16 @@ export const connection = <TNode>(nodes: TNode[]) => ({
 type QuerySelection = { __args?: { filter?: Record<string, unknown> } };
 
 export type QueryAnswers = Partial<
-  Record<string, (filter: Record<string, unknown>) => unknown[]>
+  Record<
+    string,
+    (
+      filter: Record<string, unknown>,
+    ) => unknown[] | Record<string, unknown> | null
+  >
 >;
 
-// Answers every root of a query with the nodes its answer returns for that root's filter.
+// Answers every root of a query with the nodes its answer returns for that root's filter;
+// a root answered with one object (or null) is a single-record query such as `project`.
 export const answerQueries = (
   client: MockRecordApiClient,
   answers: QueryAnswers,
@@ -37,10 +43,11 @@ export const answerQueries = (
   client.query.mockImplementation(
     async (request: Record<string, QuerySelection>) =>
       Object.fromEntries(
-        Object.entries(request).map(([root, selection]) => [
-          root,
-          connection(answers[root]?.(selection.__args?.filter ?? {}) ?? []),
-        ]),
+        Object.entries(request).map(([root, selection]) => {
+          const answer = answers[root]?.(selection.__args?.filter ?? {}) ?? [];
+
+          return [root, Array.isArray(answer) ? connection(answer) : answer];
+        }),
       ),
   );
 };

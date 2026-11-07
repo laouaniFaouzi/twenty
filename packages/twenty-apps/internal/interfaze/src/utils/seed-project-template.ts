@@ -1,9 +1,17 @@
 import { type Offer } from 'src/constants/offer';
 import { TRACKER_TEMPLATES } from 'src/constants/tracker-templates';
 import { type ProjectStatus } from 'src/objects/project.object';
-import { getEdgeNodes, type RecordApiClient } from 'src/utils/record-api-client';
+import {
+  getEdgeNodes,
+  type RecordApiClient,
+} from 'src/utils/record-api-client';
 
-type ProjectForSeeding = { id: string; offer: Offer | null; status: ProjectStatus };
+type ProjectForSeeding = {
+  id: string;
+  offer: Offer | null;
+  status: ProjectStatus;
+  siteTrackerId: string | null;
+};
 
 export type ProjectEvent = {
   name: string;
@@ -11,15 +19,22 @@ export type ProjectEvent = {
   properties: { updatedFields?: string[] };
 };
 
+// A project born from a tracker of the site brings its own phases with it.
 export const shouldSeedProjectTemplate = ({
   offer,
   status,
   phaseCount,
+  hasSiteTracker,
 }: {
   offer: Offer | null;
   status: ProjectStatus;
   phaseCount: number;
-}): boolean => offer !== null && status !== 'ARCHIVED' && phaseCount === 0;
+  hasSiteTracker: boolean;
+}): boolean =>
+  offer !== null &&
+  status !== 'ARCHIVED' &&
+  phaseCount === 0 &&
+  !hasSiteTracker;
 
 export const seedProjectTemplate = async (
   client: RecordApiClient,
@@ -31,6 +46,7 @@ export const seedProjectTemplate = async (
       id: true,
       offer: true,
       status: true,
+      siteTrackerId: true,
     },
     projectPhases: {
       __args: { filter: { projectId: { eq: projectId } }, first: 1 },
@@ -46,6 +62,7 @@ export const seedProjectTemplate = async (
       offer: project.offer,
       status: project.status,
       phaseCount: getEdgeNodes(response, 'projectPhases').length,
+      hasSiteTracker: Boolean(project.siteTrackerId),
     })
   ) {
     return { seeded: false };
@@ -61,7 +78,11 @@ export const seedProjectTemplate = async (
     const created = await client.mutation({
       createProjectPhase: {
         __args: {
-          data: { name: phaseTemplate.name, position: phasePosition, projectId },
+          data: {
+            name: phaseTemplate.name,
+            position: phasePosition,
+            projectId,
+          },
         },
         id: true,
       },

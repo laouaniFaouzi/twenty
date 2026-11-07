@@ -116,6 +116,27 @@ export const upsertSiteTask = async (
     )
   )[0];
 
+export const updateSiteRow = async <TRow>(
+  settings: SyncSettings,
+  table: 'tracker_phases' | 'tracker_tasks',
+  id: string,
+  patch: Record<string, unknown>,
+  fetchImpl?: typeof fetch,
+): Promise<TRow | null> =>
+  (
+    await siteRest<TRow>(
+      settings,
+      {
+        method: 'PATCH',
+        table,
+        query: `id=eq.${encodeURIComponent(id)}`,
+        body: patch,
+        prefer: RETURN_ROWS,
+      },
+      fetchImpl,
+    )
+  )[0] ?? null;
+
 export const deleteSiteRowByCrmId = async (
   settings: SyncSettings,
   table: 'tracker_phases' | 'tracker_tasks',

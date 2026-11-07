@@ -6,6 +6,7 @@ import {
   fetchSiteRows,
   findSiteTrackerByCrmId,
   insertSiteTracker,
+  updateSiteRow,
   updateSiteTracker,
   upsertSitePhase,
   upsertSiteTask,
@@ -164,6 +165,37 @@ describe('tracker client', () => {
 
     expect(await upsertSiteTask(SETTINGS, fields, fetchImpl)).toEqual(ROW);
     expectUpsertCall(fetchImpl, 'tracker_tasks', fields);
+  });
+
+  it('updates a phase or a task by its site id, and tells when no row was there', async () => {
+    const fetchImpl = respondingWith(200, [ROW]);
+
+    expect(
+      await updateSiteRow(
+        SETTINGS,
+        'tracker_tasks',
+        'S-TA1',
+        { status: 'done' },
+        fetchImpl,
+      ),
+    ).toEqual(ROW);
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'https://abc.supabase.co/rest/v1/tracker_tasks?id=eq.S-TA1',
+      {
+        method: 'PATCH',
+        headers: { ...HEADERS, Prefer: 'return=representation' },
+        body: '{"status":"done"}',
+      },
+    );
+    expect(
+      await updateSiteRow(
+        SETTINGS,
+        'tracker_phases',
+        'S-PH1',
+        { name: 'x' },
+        respondingWith(200, []),
+      ),
+    ).toBeNull();
   });
 
   it('deletes a phase or a task by its HubFaze id', async () => {
