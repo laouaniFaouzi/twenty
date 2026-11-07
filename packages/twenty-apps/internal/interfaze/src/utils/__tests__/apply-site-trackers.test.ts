@@ -453,7 +453,11 @@ describe('applySiteTrackerDeleted', () => {
 
     await applySiteTrackerDeleted(client, { ...TRACKER, crm_id: 'P1' });
 
-    expect(mutationNames(client)).toEqual(['updateProject']);
+    expect(mutationNames(client)).toEqual([
+      'updateProject',
+      'updateProjectPhases',
+      'updateProjectTasks',
+    ]);
     expect(mutationArgs(client, 'updateProject')).toEqual([
       {
         id: 'P1',
@@ -465,5 +469,8 @@ describe('applySiteTrackerDeleted', () => {
         },
       },
     ]);
+    expect(mutationArgs(client, 'updateProjectTasks')[0]).toMatchObject({
+      filter: { projectId: { eq: 'P1' } },
+    });
   });
 });

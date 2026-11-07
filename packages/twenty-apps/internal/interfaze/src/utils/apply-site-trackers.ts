@@ -8,6 +8,7 @@ import {
   pushProject,
   pushTask,
   type TrackerSyncDependencies,
+  unlinkProjectFromSite,
 } from 'src/utils/push-trackers';
 import {
   getEdgeNodes,
@@ -74,13 +75,6 @@ type TaskRecord = {
 };
 
 const TRACKER_LINK_LABEL = 'Suivi client';
-
-const ARCHIVED_AND_UNLINKED = {
-  status: 'ARCHIVED',
-  siteTrackerId: null,
-  siteUpdatedAt: null,
-  syncHash: null,
-};
 
 // HubFaze records born on the site carry the site id as their own id.
 const matchingIds = (row: { id: string; crm_id: string | null }) =>
@@ -423,12 +417,7 @@ export const applySiteTrackerDeleted = async (
   const project = await findProject(client, row);
 
   if (project !== null) {
-    await updateRecord(
-      client,
-      'updateProject',
-      project.id,
-      ARCHIVED_AND_UNLINKED,
-    );
+    await unlinkProjectFromSite(client, project.id);
   }
 };
 

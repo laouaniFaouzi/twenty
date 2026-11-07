@@ -288,20 +288,21 @@ describe('project to tracker', () => {
     expect(rest.deleteSiteRowByCrmId).not.toHaveBeenCalled();
   });
 
-  it('archives the project when its tracker is gone from the site', async () => {
+  it('archives the project when its tracker is gone from the site, forgetting the site ids of its phases and tasks', async () => {
     given({
       projects: () => [
-        {
-          ...SYNCED_PROJECT,
-          name: 'Nouveau nom',
-          company: null,
-        },
+        { ...SYNCED_PROJECT, name: 'Nouveau nom', company: null },
       ],
     });
     rest.updateSiteTracker.mockResolvedValue(null);
 
     await projectEvent('updated', { updatedFields: ['name'] });
 
+    expect(mutationNames(client)).toEqual([
+      'updateProject',
+      'updateProjectPhases',
+      'updateProjectTasks',
+    ]);
     expect(mutationArgs(client, 'updateProject')).toEqual([
       {
         id: 'P1',
@@ -313,6 +314,32 @@ describe('project to tracker', () => {
         },
       },
     ]);
+    expect(mutationArgs(client, 'updateProjectPhases')).toEqual([
+      {
+        filter: { projectId: { eq: 'P1' } },
+        data: { siteId: null, siteUpdatedAt: null, syncHash: null },
+      },
+    ]);
+    expect(mutationArgs(client, 'updateProjectTasks')).toEqual([
+      {
+        filter: { projectId: { eq: 'P1' } },
+        data: { siteId: null, siteUpdatedAt: null, syncHash: null },
+      },
+    ]);
+  });
+
+  it('sends the whole checklist with the new tracker of a project taken out of the archive', async () => {
+    given({
+      projects: () => [{ ...PROJECT, siteTrackerId: '', syncHash: '' }],
+      projectPhases: () => [PHASE],
+      projectTasks: () => [{ ...TASK, siteId: '' }],
+    });
+
+    await projectEvent('updated', { updatedFields: ['status'] });
+
+    expect(rest.insertSiteTracker).toHaveBeenCalledTimes(1);
+    expect(rest.upsertSitePhase).toHaveBeenCalledTimes(1);
+    expect(rest.upsertSiteTask).toHaveBeenCalledTimes(1);
   });
 
   it('sends a restored project even though its hash did not move', async () => {
@@ -523,16 +550,47 @@ describe('phases and tasks to the site', () => {
     ]);
   });
 
-  it('creates a restored phase again instead of updating the deleted site row', async () => {
-    given({ projectPhases: () => [{ ...PHASE, siteId: 'S-OLD' }] });
+  it('creates a restored phase again, then its restored tasks, never with the old site ids', async () => {
+    given({
+      projectPhases: () => [{ ...PHASE, siteId: 'S-OLD' }],
+      projectTasks: () => [{ ...TASK, siteId: '' }],
+    });
 
     await phaseEvent('restored');
 
+    expect(mutationNames(client).slice(0, 2)).toEqual([
+      'updateProjectPhase',
+      'updateProjectTasks',
+    ]);
+    expect(mutationArgs(client, 'updateProjectPhase')[0]).toEqual({
+      id: 'PH1',
+      data: { siteId: null, siteUpdatedAt: null, syncHash: null },
+    });
+    expect(mutationArgs(client, 'updateProjectTasks')[0]).toEqual({
+      filter: { phaseId: { eq: 'PH1' } },
+      data: { siteId: null, siteUpdatedAt: null, syncHash: null },
+    });
     expect(rest.updateSiteRow).not.toHaveBeenCalled();
     expect(rest.upsertSitePhase).toHaveBeenCalledWith(
       SETTINGS,
       expect.objectContaining({ crm_id: 'PH1' }),
     );
+    expect(rest.upsertSiteTask).toHaveBeenCalledWith(
+      SETTINGS,
+      expect.objectContaining({ crm_id: 'TA1' }),
+    );
+  });
+
+  it('sends the tasks waiting for a new phase as soon as the phase reaches the site', async () => {
+    given({
+      projectPhases: () => [PHASE],
+      projectTasks: () => [{ ...TASK, siteId: '' }],
+    });
+
+    await phaseEvent('created');
+
+    expect(rest.upsertSitePhase).toHaveBeenCalledTimes(1);
+    expect(rest.upsertSiteTask).toHaveBeenCalledTimes(1);
   });
 
   it('notes a failed call in the Journal de synchro without throwing', async () => {

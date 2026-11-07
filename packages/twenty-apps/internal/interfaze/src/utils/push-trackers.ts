@@ -335,12 +335,7 @@ export const pushProject = async (
 
   if (row === null) {
     // The tracker was deleted on the site: the project follows, as for a deletion received from the site.
-    await updateRecord(client, 'updateProject', project.id, {
-      status: 'ARCHIVED',
-      siteTrackerId: null,
-      siteUpdatedAt: null,
-      syncHash: null,
-    });
+    await unlinkProjectFromSite(client, project.id);
 
     return 'updated';
   }
@@ -448,29 +443,91 @@ export const pushTask = async (
   return 'pushed';
 };
 
+const CLEARED_SYNC_FIELDS = {
+  siteId: null,
+  siteUpdatedAt: null,
+  syncHash: null,
+};
+
+// The rows of a deleted tracker or phase are gone from the site: forgetting their ids sends them again
+// if the project or the phase comes back, instead of updating rows that no longer exist.
+export const unlinkProjectFromSite = async (
+  client: RecordApiClient,
+  projectId: string,
+): Promise<void> => {
+  await updateRecord(client, 'updateProject', projectId, {
+    status: 'ARCHIVED',
+    siteTrackerId: null,
+    siteUpdatedAt: null,
+    syncHash: null,
+  });
+
+  for (const mutationName of ['updateProjectPhases', 'updateProjectTasks']) {
+    await client.mutation({
+      [mutationName]: {
+        __args: {
+          filter: { projectId: { eq: projectId } },
+          data: CLEARED_SYNC_FIELDS,
+        },
+        id: true,
+      },
+    });
+  }
+};
+
+const pushRecords = async (
+  client: RecordApiClient,
+  root: 'projectPhases' | 'projectTasks',
+  filter: Record<string, unknown>,
+  push: (id: string) => Promise<unknown>,
+) => {
+  const response = await client.query({
+    [root]: { __args: { filter, first: 200 }, edges: { node: { id: true } } },
+  });
+
+  for (const { id } of getEdgeNodes<{ id: string }>(response, root)) {
+    await push(id);
+  }
+};
+
+export const pushProjectChildren = async (
+  client: RecordApiClient,
+  projectId: string,
+  deps: TrackerSyncDependencies,
+): Promise<void> => {
+  const byProject = { projectId: { eq: projectId } };
+
+  await pushRecords(client, 'projectPhases', byProject, (id) =>
+    pushPhase(client, id, deps),
+  );
+  await pushRecords(client, 'projectTasks', byProject, (id) =>
+    pushTask(client, id, deps),
+  );
+};
+
+// Tasks created or restored before their phase reached the site were skipped: they follow it.
+const pushWaitingTasksOfPhase = (
+  client: RecordApiClient,
+  phaseId: string,
+  deps: TrackerSyncDependencies,
+) =>
+  pushRecords(
+    client,
+    'projectTasks',
+    {
+      phaseId: { eq: phaseId },
+      or: [{ siteId: { is: 'NULL' } }, { siteId: { eq: '' } }],
+    },
+    (id) => pushTask(client, id, deps),
+  );
+
 export const pushProjectTree = async (
   client: RecordApiClient,
   projectId: string,
   deps: TrackerSyncDependencies,
 ): Promise<void> => {
   await pushProject(client, projectId, deps);
-
-  const byProject = { filter: { projectId: { eq: projectId } }, first: 200 };
-  const response = await client.query({
-    projectPhases: { __args: byProject, edges: { node: { id: true } } },
-    projectTasks: { __args: byProject, edges: { node: { id: true } } },
-  });
-
-  for (const { id } of getEdgeNodes<{ id: string }>(
-    response,
-    'projectPhases',
-  )) {
-    await pushPhase(client, id, deps);
-  }
-
-  for (const { id } of getEdgeNodes<{ id: string }>(response, 'projectTasks')) {
-    await pushTask(client, id, deps);
-  }
+  await pushProjectChildren(client, projectId, deps);
 };
 
 export const deleteSitePhase = (
@@ -519,11 +576,37 @@ const runSyncEvent = async (
       operation === 'created' ||
       (properties.updatedFields ?? []).includes('offer');
 
-    await (isNewTree
-      ? pushProjectTree(client, recordId, deps)
-      : pushProject(client, recordId, deps, { force }));
+    if (isNewTree) {
+      await pushProjectTree(client, recordId, deps);
+    } else if (
+      (await pushProject(client, recordId, deps, { force })) === 'created'
+    ) {
+      // A project back from the archive gets a new tracker: its checklist goes with it.
+      await pushProjectChildren(client, recordId, deps);
+    }
   } else if (objectName === 'projectPhase') {
-    await pushPhase(client, recordId, deps, { force });
+    if (force) {
+      // Restored tasks must wait for the phase's new site id, not use the deleted one.
+      await updateRecord(
+        client,
+        'updateProjectPhase',
+        recordId,
+        CLEARED_SYNC_FIELDS,
+      );
+      await client.mutation({
+        updateProjectTasks: {
+          __args: {
+            filter: { phaseId: { eq: recordId } },
+            data: CLEARED_SYNC_FIELDS,
+          },
+          id: true,
+        },
+      });
+    }
+
+    if ((await pushPhase(client, recordId, deps, { force })) === 'pushed') {
+      await pushWaitingTasksOfPhase(client, recordId, deps);
+    }
   } else {
     await pushTask(client, recordId, deps, { force });
   }

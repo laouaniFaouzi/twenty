@@ -46,23 +46,43 @@ export const updateSiteTracker = async (
     )
   )[0] ?? null;
 
-export const fetchSiteRows = <TRow>(
+// PostgREST cuts every answer at max_rows (1000) without an error: an unpaged read looks complete.
+const SITE_PAGE_SIZE = 1000;
+
+export const fetchSiteRows = async <TRow>(
   settings: SyncSettings,
   table: 'trackers' | 'tracker_phases' | 'tracker_tasks' | 'leads',
   filters: Record<string, string>,
   fetchImpl?: typeof fetch,
-): Promise<TRow[]> =>
-  siteRest<TRow>(
-    settings,
-    {
-      method: 'GET',
-      table,
-      query: new URLSearchParams({ select: '*', ...filters })
-        .toString()
-        .replace('select=%2A', 'select=*'),
-    },
-    fetchImpl,
-  );
+): Promise<TRow[]> => {
+  const rows: TRow[] = [];
+
+  for (let offset = 0; ; offset += SITE_PAGE_SIZE) {
+    const page = await siteRest<TRow>(
+      settings,
+      {
+        method: 'GET',
+        table,
+        query: new URLSearchParams({
+          select: '*',
+          ...filters,
+          order: 'id.asc',
+          limit: String(SITE_PAGE_SIZE),
+          offset: String(offset),
+        })
+          .toString()
+          .replace('select=%2A', 'select=*'),
+      },
+      fetchImpl,
+    );
+
+    rows.push(...page);
+
+    if (page.length < SITE_PAGE_SIZE) {
+      return rows;
+    }
+  }
+};
 
 export const findSiteTrackerByCrmId = async (
   settings: SyncSettings,

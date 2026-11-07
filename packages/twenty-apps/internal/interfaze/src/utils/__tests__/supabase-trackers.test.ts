@@ -115,7 +115,7 @@ describe('tracker client', () => {
       ROW,
     );
     expect(fetchImpl.mock.calls[0][0]).toBe(
-      'https://abc.supabase.co/rest/v1/trackers?select=*&crm_id=eq.P1',
+      'https://abc.supabase.co/rest/v1/trackers?select=*&crm_id=eq.P1&order=id.asc&limit=1000&offset=0',
     );
     expect(
       await findSiteTrackerByCrmId(SETTINGS, 'P1', respondingWith(200, [])),
@@ -213,6 +213,26 @@ describe('tracker client', () => {
     );
   });
 
+  it('reads every page, since Supabase returns at most 1000 rows per request', async () => {
+    const page = (size: number, from: number) =>
+      Array.from({ length: size }, (_, index) => ({ id: `S${from + index}` }));
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(page(1000, 0)), { status: 200 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(page(5, 1000)), { status: 200 }),
+      );
+
+    expect(
+      await fetchSiteRows(SETTINGS, 'tracker_tasks', {}, fetchImpl),
+    ).toHaveLength(1005);
+    expect(
+      fetchImpl.mock.calls.map(([url]) => String(url).split('&').slice(-1)[0]),
+    ).toEqual(['offset=0', 'offset=1000']);
+  });
+
   it('reads rows with PostgREST filters', async () => {
     const fetchImpl = respondingWith(200, [ROW]);
 
@@ -228,7 +248,7 @@ describe('tracker client', () => {
       ),
     ).toEqual([ROW]);
     expect(fetchImpl.mock.calls[0][0]).toBe(
-      'https://abc.supabase.co/rest/v1/tracker_phases?select=*&tracker_id=in.%28T1%2CT2%29&updated_at=gte.2026-10-08T10%3A00%3A00.000Z',
+      'https://abc.supabase.co/rest/v1/tracker_phases?select=*&tracker_id=in.%28T1%2CT2%29&updated_at=gte.2026-10-08T10%3A00%3A00.000Z&order=id.asc&limit=1000&offset=0',
     );
   });
 });

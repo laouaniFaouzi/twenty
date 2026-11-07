@@ -5,6 +5,7 @@ import {
   createMockRecordApiClient,
   type MockRecordApiClient,
   mutationArgs,
+  mutationNames,
   type QueryAnswers,
   queryFilters,
 } from 'src/__tests__/utils/create-mock-record-api-client';
@@ -25,13 +26,18 @@ import {
   pushProjectTree,
   pushTask,
   type TrackerRestClient,
+  unlinkProjectFromSite,
 } from 'src/utils/push-trackers';
 import { runReconciliation } from 'src/utils/reconcile-site';
 import { type SyncSettings } from 'src/utils/sync-settings';
 import {
+  phaseFieldsFromSite,
   type SitePhase,
   type SiteTask,
   type SiteTracker,
+  syncHashOf,
+  taskFieldsFromSite,
+  trackerFieldsFromSite,
 } from 'src/utils/tracker-mapping';
 
 vi.mock('src/utils/apply-site-trackers', () => ({
@@ -44,6 +50,7 @@ vi.mock('src/utils/push-trackers', () => ({
   pushProjectTree: vi.fn(async () => undefined),
   pushPhase: vi.fn(async () => 'pushed'),
   pushTask: vi.fn(async () => 'pushed'),
+  unlinkProjectFromSite: vi.fn(async () => undefined),
 }));
 
 vi.mock('src/utils/handle-lead-created', () => ({
@@ -254,7 +261,14 @@ describe('runReconciliation · trackers', () => {
     givenHubFaze({
       projects: (filter) =>
         'siteTrackerId' in filter && 'in' in (filter.siteTrackerId as object)
-          ? [{ id: 'P1', siteTrackerId: 'T1' }]
+          ? [
+              {
+                id: 'P1',
+                siteTrackerId: 'T1',
+                offer: 'WEB',
+                status: 'IN_PROGRESS',
+              },
+            ]
           : [],
       projectPhases: () => [
         { id: 'PH1', siteId: 'S-PH1', siteUpdatedAt: OLD },
@@ -331,17 +345,8 @@ describe('runReconciliation · trackers', () => {
       expect.objectContaining({ id: 'T8' }),
       expect.anything(),
     );
-    expect(mutationArgs(client, 'updateProject')).toEqual([
-      {
-        id: 'P9',
-        data: {
-          status: 'ARCHIVED',
-          siteTrackerId: null,
-          siteUpdatedAt: null,
-          syncHash: null,
-        },
-      },
-    ]);
+    expect(unlinkProjectFromSite).toHaveBeenCalledTimes(1);
+    expect(unlinkProjectFromSite).toHaveBeenCalledWith(client, 'P9');
   });
 });
 
@@ -436,5 +441,142 @@ describe('runReconciliation · Journal de synchro', () => {
     expect(mutationArgs(client, 'deleteSyncLogs')).toEqual([
       { filter: { occurredAt: { lt: '2026-08-09T10:00:00.000Z' } } },
     ]);
+  });
+});
+
+describe('runReconciliation · robustness and cost', () => {
+  it('notes a failed read in the Journal and still handles the leads and the purge', async () => {
+    fetchSiteRows.mockImplementation(
+      async (_settings: SyncSettings, table: string) => {
+        if (table === 'trackers') {
+          throw new Error('Supabase a refusé GET trackers (503)');
+        }
+
+        return table === 'leads' ? [lead({ crm_id: 'O1' })] : [];
+      },
+    );
+
+    expect(await run()).toMatchObject({ failures: 1 });
+    expect(mutationArgs(client, 'createSyncLog')[0]).toMatchObject({
+      data: {
+        direction: 'RECONCILIATION',
+        entity: 'TRACKER',
+        error: 'Lecture des suivis : Supabase a refusé GET trackers (503)',
+      },
+    });
+    expect(handleLeadUpdated).toHaveBeenCalledTimes(1);
+    expect(mutationNames(client)).toContain('deleteSyncLogs');
+  });
+
+  it('reads the phases of many trackers in chunks the gateway accepts', async () => {
+    givenSite({
+      trackers: Array.from({ length: 150 }, (_, index) => tracker(`T${index}`)),
+    });
+
+    await run();
+
+    const phaseReads = fetchSiteRows.mock.calls.filter(
+      ([, table]) => table === 'tracker_phases',
+    );
+
+    expect(phaseReads).toHaveLength(2);
+    expect(
+      phaseReads.map(([, , filters]) => filters.tracker_id.split(',').length),
+    ).toEqual([100, 50]);
+  });
+
+  it('leaves alone the trackers, phases and tasks already in sync, without one call each', async () => {
+    const changedTask = { ...TASK, id: 'S-TA2', crm_id: 'TA2', status: 'done' };
+
+    givenSite({
+      trackers: [{ ...tracker('T1'), crm_id: 'P1' }],
+      phases: [PHASE],
+      tasks: [TASK, changedTask],
+    });
+    givenHubFaze({
+      projects: () => [
+        {
+          id: 'P1',
+          name: 'Client T1 · WebFaze',
+          offer: 'WEB',
+          status: 'IN_PROGRESS',
+          siteTrackerId: 'T1',
+          syncHash: syncHashOf(trackerFieldsFromSite(tracker('T1'))),
+          siteUpdatedAt: OLD,
+          trackerUrl: { primaryLinkUrl: 'https://interfaze.fr/suivi/code-T1' },
+          company: { name: 'Client T1' },
+        },
+      ],
+      projectPhases: () => [
+        {
+          id: 'PH1',
+          name: 'On échange',
+          position: 0,
+          siteId: 'S-PH1',
+          siteUpdatedAt: OLD,
+          syncHash: syncHashOf(phaseFieldsFromSite(PHASE)),
+          project: { siteTrackerId: 'T1' },
+        },
+      ],
+      projectTasks: () => [
+        {
+          id: 'TA1',
+          name: 'Atelier',
+          description: '',
+          status: 'DOING',
+          position: 1,
+          siteId: 'S-TA1',
+          siteUpdatedAt: OLD,
+          syncHash: syncHashOf(taskFieldsFromSite(TASK)),
+          phase: { siteId: 'S-PH1' },
+        },
+        {
+          id: 'TA2',
+          name: 'Atelier',
+          description: '',
+          status: 'DOING',
+          position: 1,
+          siteId: 'S-TA2',
+          siteUpdatedAt: OLD,
+          syncHash: syncHashOf(
+            taskFieldsFromSite({ ...changedTask, status: 'doing' }),
+          ),
+          phase: { siteId: 'S-PH1' },
+        },
+      ],
+    });
+
+    await run();
+
+    expect(applySiteTracker).not.toHaveBeenCalled();
+    expect(applySitePhase).not.toHaveBeenCalled();
+    expect(applySiteTask).toHaveBeenCalledTimes(1);
+    expect(applySiteTask).toHaveBeenCalledWith(
+      client,
+      changedTask,
+      expect.anything(),
+    );
+  });
+
+  it('leaves alone a linked lead whose status HubFaze already knows', async () => {
+    givenSite({ leads: [lead({ crm_id: 'O1', status: 'in_progress' })] });
+    givenHubFaze({
+      opportunities: (filter) =>
+        'siteLeadId' in filter && 'in' in (filter.siteLeadId as object)
+          ? [
+              {
+                id: 'O1',
+                interfazeStage: 'DISCUSSION',
+                siteLeadId: 'L1',
+                siteLeadStatusSeen: 'in_progress',
+              },
+            ]
+          : [],
+    });
+
+    await run();
+
+    expect(handleLeadCreated).not.toHaveBeenCalled();
+    expect(handleLeadUpdated).not.toHaveBeenCalled();
   });
 });
