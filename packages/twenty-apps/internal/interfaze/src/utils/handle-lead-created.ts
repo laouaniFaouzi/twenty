@@ -165,9 +165,10 @@ const findPersonByEmail = async (
   return getEdgeNodes<PersonSummary>(response, 'people')[0] ?? null;
 };
 
-const findOrCreateCompany = async (
+export const findOrCreateCompany = async (
   client: RecordApiClient,
   typedName: string,
+  clientStatus: 'PROSPECT' | 'CLIENT',
 ): Promise<{ id: string; name: string }> => {
   const name = typedName.trim().replace(/\s+/g, ' ');
   const response = await client.query({
@@ -191,7 +192,7 @@ const findOrCreateCompany = async (
 
   const created = await client.mutation({
     createCompany: {
-      __args: { data: { name, clientStatus: 'PROSPECT' } },
+      __args: { data: { name, clientStatus } },
       id: true,
     },
   });
@@ -342,7 +343,7 @@ export const handleLeadCreated = async (
   const typedCompanyName = lead.company?.trim() ?? '';
   const company =
     typedCompanyName !== ''
-      ? await findOrCreateCompany(client, typedCompanyName)
+      ? await findOrCreateCompany(client, typedCompanyName, 'PROSPECT')
       : person?.company
         ? { id: person.company.id, name: (person.company.name ?? '').trim() }
         : null;
