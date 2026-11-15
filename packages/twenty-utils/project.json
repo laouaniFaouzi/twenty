@@ -4,6 +4,13 @@
   "sourceRoot": "packages/twenty-utils",
   "projectType": "application",
   "targets": {
-    "test": {}
+    "test": {},
+    "check-branding": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{workspaceRoot}",
+        "command": "npx tsx packages/twenty-utils/branding/check-branding.ts"
+      }
+    }
   }
 }
