@@ -9,7 +9,7 @@ export default defineNavigationMenuItem({
   universalIdentifier: '1f5a47c0-9944-4f8f-9d32-a7aea13e3da8',
   name: 'Pages',
   icon: 'IconNotes',
-  position: 5,
+  position: -1,
   type: NavigationMenuItemType.PAGE_LAYOUT,
   pageLayoutUniversalIdentifier: PAGES_PAGE_LAYOUT_UNIVERSAL_IDENTIFIER,
 });

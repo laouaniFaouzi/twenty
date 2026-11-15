@@ -227,22 +227,22 @@ describe('Navigation', () => {
       pageLayoutUniversalIdentifier: PILOTAGE_PAGE_LAYOUT_UNIVERSAL_IDENTIFIER,
       name: 'Pilotage',
       icon: 'IconLayoutDashboard',
-      position: 0,
+      position: -6,
     });
     expect(pipelineNavigationMenuItem.config).toMatchObject({
       type: NavigationMenuItemType.VIEW,
       viewUniversalIdentifier: OPPORTUNITY_PIPELINE_VIEW_UNIVERSAL_IDENTIFIER,
       name: 'Pipeline',
-      position: 1,
+      position: -5,
     });
     expect(
       [projectsNavigationMenuItem, projectTasksNavigationMenuItem, maintenanceNavigationMenuItem].map(
         (item) => [item.success, item.config.type, item.config.position],
       ),
     ).toEqual([
-      [true, NavigationMenuItemType.OBJECT, 2],
-      [true, NavigationMenuItemType.OBJECT, 3],
-      [true, NavigationMenuItemType.OBJECT, 4],
+      [true, NavigationMenuItemType.OBJECT, -4],
+      [true, NavigationMenuItemType.OBJECT, -3],
+      [true, NavigationMenuItemType.OBJECT, -2],
     ]);
   });
 });

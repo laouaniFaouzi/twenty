@@ -9,7 +9,7 @@ export default defineNavigationMenuItem({
   universalIdentifier: 'b5472133-da62-479b-8d61-6574111a3291',
   name: 'Pipeline',
   icon: 'IconTargetArrow',
-  position: 1,
+  position: -5,
   type: NavigationMenuItemType.VIEW,
   viewUniversalIdentifier: OPPORTUNITY_PIPELINE_VIEW_UNIVERSAL_IDENTIFIER,
 });
