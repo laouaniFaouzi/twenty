@@ -15,6 +15,7 @@ import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { TwoFactorAuthenticationMethodEntity } from 'src/engine/core-modules/two-factor-authentication/entities/two-factor-authentication-method.entity';
 import { TOTP_DEFAULT_CONFIGURATION } from 'src/engine/core-modules/two-factor-authentication/strategies/otp/totp/constants/totp.strategy.constants';
 import { TotpStrategy } from 'src/engine/core-modules/two-factor-authentication/strategies/otp/totp/totp.strategy';
+import { buildTwoFactorIssuer } from 'src/engine/core-modules/two-factor-authentication/utils/build-two-factor-issuer.util';
 import { InjectWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/inject-workspace-scoped-repository.decorator';
 import { WorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/workspace-scoped-repository';
 import { UserWorkspaceService } from 'src/engine/core-modules/user-workspace/user-workspace.service';
@@ -115,7 +116,7 @@ export class TwoFactorAuthenticationService {
         workspaceId,
       });
 
-      const issuer = `Twenty${workspaceDisplayName ? ` - ${workspaceDisplayName}` : ''}`;
+      const issuer = buildTwoFactorIssuer(workspaceDisplayName);
       const reuseUri = authenticator.keyuri(userEmail, issuer, existingSecret);
 
       return reuseUri;
@@ -123,10 +124,7 @@ export class TwoFactorAuthenticationService {
 
     const { uri, context } = new TotpStrategy(
       TOTP_DEFAULT_CONFIGURATION,
-    ).initiate(
-      userEmail,
-      `Twenty${workspaceDisplayName ? ` - ${workspaceDisplayName}` : ''}`,
-    );
+    ).initiate(userEmail, buildTwoFactorIssuer(workspaceDisplayName));
 
     const encryptedSecret = this.secretEncryptionService.encryptVersioned(
       context.secret,

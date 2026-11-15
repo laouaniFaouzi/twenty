@@ -46,6 +46,7 @@ import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.ent
 import { RoleValidationService } from 'src/engine/metadata-modules/role-validation/services/role-validation.service';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 import { CustomException } from 'src/utils/custom-exception';
+import { BRAND } from 'twenty-shared/constants';
 
 @Injectable()
 export class WorkspaceInvitationService {
@@ -403,12 +404,13 @@ export class WorkspaceInvitationService {
           plainText: true,
         });
 
-        const joinTeamMsg = msg`Join your team on Twenty`;
+        const brandName = BRAND.name;
+        const joinTeamMsg = msg`Join your team on ${brandName}`;
         const i18n = this.i18nService.getI18nInstance(sender.locale);
         const subject = i18n._(joinTeamMsg);
 
         await this.emailService.send({
-          from: `${sender.name.firstName} ${sender.name.lastName} (via Twenty) <${this.twentyConfigService.get('EMAIL_FROM_ADDRESS')}>`,
+          from: `${sender.name.firstName} ${sender.name.lastName} (via ${BRAND.name}) <${this.twentyConfigService.get('EMAIL_FROM_ADDRESS')}>`,
           to: invitation.value.email,
           subject,
           text,

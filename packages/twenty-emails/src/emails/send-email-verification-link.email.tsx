@@ -5,6 +5,7 @@ import { MainText } from 'src/components/MainText';
 import { Title } from 'src/components/Title';
 import { createI18nInstance } from 'src/utils/i18n.utils';
 import { type APP_LOCALES } from 'twenty-shared/translations';
+import { BRAND } from 'twenty-shared/constants';
 
 type SendEmailVerificationLinkEmailProps = {
   link: string;
@@ -21,9 +22,10 @@ export const SendEmailVerificationLinkEmail = ({
   const title = isEmailUpdate
     ? i18n._('Confirm your new email address')
     : i18n._('Confirm your email address');
+  // These bodies are picked at runtime, so they never reach the catalogs.
   const bodyId = isEmailUpdate
-    ? 'We received a request to change the email address associated with your Twenty account. Click below to confirm this change.'
-    : 'Thanks for registering for an account on Twenty! Before we get started, we just need to confirm that this is you. Click below to verify your email address.';
+    ? `We received a request to change the email address associated with your ${BRAND.name} account. Click below to confirm this change.`
+    : `Thanks for registering for an account on ${BRAND.name}! Before we get started, we just need to confirm that this is you. Click below to verify your email address.`;
   const ctaLabel = isEmailUpdate
     ? i18n._('Confirm new email')
     : i18n._('Verify Email');

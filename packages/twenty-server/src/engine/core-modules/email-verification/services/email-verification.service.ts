@@ -27,6 +27,7 @@ import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { I18nService } from 'src/engine/core-modules/i18n/i18n.service';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
+import { BRAND } from 'twenty-shared/constants';
 
 @Injectable()
 export class EmailVerificationService {
@@ -99,10 +100,11 @@ export class EmailVerificationService {
       plainText: true,
     });
 
+    const brandName = BRAND.name;
     const emailVerificationMsg =
       verificationTrigger === EmailVerificationTrigger.EMAIL_UPDATE
         ? msg`Please confirm your updated email`
-        : msg`Welcome to Twenty: Please Confirm Your Email`;
+        : msg`Welcome to ${brandName}: Please Confirm Your Email`;
     const i18n = this.i18nService.getI18nInstance(locale);
     const subject = i18n._(emailVerificationMsg);
 
