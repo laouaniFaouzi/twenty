@@ -21,6 +21,7 @@ import {
   AnimatedPlaceholderErrorTitle,
 } from 'twenty-ui/feedback';
 import { UndecoratedLink } from 'twenty-ui/navigation';
+import { BRAND } from 'twenty-shared/constants';
 
 const StyledBackDrop = styled.div`
   align-items: center;
@@ -43,10 +44,11 @@ const StyledButtonContainer = styled.div`
 
 export const NotFound = () => {
   const { t } = useLingui();
+  const brandName = BRAND.name;
 
   return (
     <>
-      <PageTitle title={t`Page Not Found | Twenty`} />
+      <PageTitle title={t`Page Not Found | ${brandName}`} />
       <StyledBackDrop>
         <AnimatedPlaceholderErrorContainer>
           <AnimatedPlaceholder type="error404" />

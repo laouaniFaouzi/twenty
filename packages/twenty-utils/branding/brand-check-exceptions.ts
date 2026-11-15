@@ -34,6 +34,12 @@ export const BRAND_CHECK_EXCEPTIONS: BrandCheckException[] = [
     reason: CLOUD_ONLY,
   },
   {
+    path: 'packages/twenty-front/src/pages/settings/community/SettingsCommunity.tsx',
+    text: 'is built on Twenty, open-source software published under the AGPL license.',
+    reason:
+      'Licence notice: the AGPL asks to say where the network software comes from',
+  },
+  {
     path: 'packages/twenty-front/src/modules/apollo/services/apollo.factory.ts',
     text: 'Twenty',
     reason:

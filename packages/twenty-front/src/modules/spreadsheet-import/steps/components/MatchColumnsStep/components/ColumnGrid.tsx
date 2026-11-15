@@ -3,6 +3,7 @@ import { t } from '@lingui/core/macro';
 import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import React from 'react';
+import { BRAND } from 'twenty-shared/constants';
 
 const StyledGridContainer = styled.div`
   align-items: center;
@@ -96,13 +97,15 @@ export const ColumnGrid = ({
   renderTemplateColumn,
   renderUnmatchedColumn,
 }: ColumnGridProps) => {
+  const brandName = BRAND.name;
+
   return (
     <>
       <StyledGridContainer>
         <StyledGrid>
           <StyledGridRow height="32px">
             <StyledGridHeader position="left">{t`Imported data`}</StyledGridHeader>
-            <StyledGridHeader position="right">{t`Twenty fields`}</StyledGridHeader>
+            <StyledGridHeader position="right">{t`${brandName} fields`}</StyledGridHeader>
           </StyledGridRow>
           {columns.map((column, index) => {
             const userColumn = renderUserColumn(columns, index);

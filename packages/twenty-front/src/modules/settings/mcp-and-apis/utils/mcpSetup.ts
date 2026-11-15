@@ -1,4 +1,5 @@
 import { MCP_SETUP } from '@/settings/mcp-and-apis/constants/McpSetup';
+import { BRAND } from 'twenty-shared/constants';
 
 export const buildMcpServerUrl = (serverBaseUrl: string) =>
   `${serverBaseUrl.replace(/\/+$/, '')}/mcp`;
@@ -69,7 +70,7 @@ export const buildGooseInstallLink = (mcpServerUrl: string) => {
     timeout: '300',
     id: MCP_SETUP.server.name,
     name: MCP_SETUP.server.displayName,
-    description: 'Access your Twenty workspace through MCP',
+    description: `Access your ${BRAND.name} workspace through MCP`,
   });
 
   params.append(

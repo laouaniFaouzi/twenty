@@ -38,6 +38,7 @@ import { useSearchParams } from 'react-router-dom';
 import { isDefined } from 'twenty-shared/utils';
 import { Loader } from 'twenty-ui/feedback';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { BRAND } from 'twenty-shared/constants';
 
 const StyledLoaderContainer = styled.div`
   align-items: center;
@@ -117,7 +118,9 @@ export const SignInUp = () => {
     }
 
     if (isGlobalScope) {
-      return t`Welcome to Twenty`;
+      const brandName = BRAND.name;
+
+      return t`Welcome to ${brandName}`;
     }
 
     const workspaceName = workspacePublicData?.displayName;

@@ -5,6 +5,7 @@ import { useWorkspaceBypass } from '@/auth/sign-in-up/hooks/useWorkspaceBypass';
 import { useIsCurrentLocationOnAWorkspace } from '@/domain-manager/hooks/useIsCurrentLocationOnAWorkspace';
 import { ONBOARDING_CONTENT_BLOCK_WIDTH } from '@/onboarding/constants/OnboardingContentBlockWidth';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { BRAND } from 'twenty-shared/constants';
 
 const StyledCopyContainer = styled.div`
   align-items: center;
@@ -64,6 +65,7 @@ export const FooterNote = ({
   secondaryAgreement = 'privacyPolicy',
 }: FooterNoteProps) => {
   const { isOnAWorkspace } = useIsCurrentLocationOnAWorkspace();
+  const brandName = BRAND.name;
 
   const { shouldOfferBypass, shouldUseBypass, enableBypass } =
     useWorkspaceBypass();
@@ -71,13 +73,13 @@ export const FooterNote = ({
   if (!isOnAWorkspace) {
     return (
       <StyledCopyContainer>
-        <Trans>By using Twenty, you agree to the</Trans>{' '}
+        <Trans>By using {brandName}, you agree to the</Trans>{' '}
         <a
-          href="https://twenty.com/legal/terms"
+          href={BRAND.legalNoticeUrl}
           target="_blank"
           rel="noopener noreferrer"
         >
-          <Trans>Terms of Service</Trans>
+          <Trans>Legal notice</Trans>
         </a>{' '}
         <Trans>and</Trans>{' '}
         {secondaryAgreement === 'dataProcessingAgreement' ? (
@@ -90,7 +92,7 @@ export const FooterNote = ({
           </a>
         ) : (
           <a
-            href="https://twenty.com/legal/privacy"
+            href={BRAND.privacyPolicyUrl}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -113,19 +115,15 @@ export const FooterNote = ({
         </>
       )}
       <a
-        href="https://twenty.com/legal/privacy"
+        href={BRAND.privacyPolicyUrl}
         target="_blank"
         rel="noopener noreferrer"
       >
         <Trans>Privacy Policy</Trans>
       </a>
       <StyledSeparator>•</StyledSeparator>
-      <a
-        href="https://twenty.com/legal/terms"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <Trans>Terms of Service</Trans>
+      <a href={BRAND.legalNoticeUrl} target="_blank" rel="noopener noreferrer">
+        <Trans>Legal notice</Trans>
       </a>
     </StyledLinksContainer>
   );

@@ -27,6 +27,7 @@ import {
   IllustrationIconUser,
 } from 'twenty-ui/icon';
 import { FieldMetadataType } from '~/generated-metadata/graphql';
+import { BRAND } from 'twenty-shared/constants';
 
 //TODO : isIncludedInUniqueConstraint refactor - https://github.com/twentyhq/core-team-issues/issues/1097
 
@@ -179,14 +180,14 @@ export const SETTINGS_COMPOSITE_FIELD_TYPE_CONFIGS = {
     ],
     exampleValues: [
       {
-        primaryLinkUrl: 'twenty.com',
+        primaryLinkUrl: 'interfaze.fr',
         primaryLinkLabel: '',
-        secondaryLinks: [{ url: 'twenty.com', label: 'Twenty' }],
+        secondaryLinks: [{ url: 'interfaze.fr', label: 'Interfaze' }],
       },
       {
-        primaryLinkUrl: 'github.com/twentyhq/twenty',
-        primaryLinkLabel: 'Twenty Repo',
-        secondaryLinks: [{ url: 'twenty.com', label: '' }],
+        primaryLinkUrl: 'github.com/laouaniFaouzi/twenty',
+        primaryLinkLabel: `${BRAND.name} source code`,
+        secondaryLinks: [{ url: 'interfaze.fr', label: '' }],
       },
       {
         primaryLinkUrl: 'react.dev',
