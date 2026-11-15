@@ -11,6 +11,13 @@
         "cwd": "{workspaceRoot}",
         "command": "npx tsx packages/twenty-utils/branding/check-branding.ts"
       }
+    },
+    "brand-translations": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{workspaceRoot}",
+        "command": "npx tsx packages/twenty-utils/branding/apply-brand-translations.ts"
+      }
     }
   }
 }

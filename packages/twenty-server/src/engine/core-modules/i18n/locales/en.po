@@ -12695,3 +12695,13 @@ msgstr "Your workspace has been updated with a new data model. Please refresh th
 #: src/engine/workspace-manager/workspace-cleaner/services/cleaner.workspace-service.ts
 msgid "Your workspace is paused — reactivate to keep your data"
 msgstr "Your workspace is paused — reactivate to keep your data"
+
+#. js-lingui-id: 9ppqld
+#: src/engine/core-modules/workspace-invitation/services/workspace-invitation.service.ts
+msgid "Join your team on {brandName}"
+msgstr "Join your team on {brandName}"
+
+#. js-lingui-id: Q36e4f
+#: src/engine/core-modules/email-verification/services/email-verification.service.ts
+msgid "Welcome to {brandName}: Please Confirm Your Email"
+msgstr "Welcome to {brandName}: Please Confirm Your Email"

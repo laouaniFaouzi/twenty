@@ -22296,3 +22296,113 @@ msgstr "Votre espace de travail sera désactivé"
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
 msgid "Zed"
 msgstr "Zed"
+
+#. js-lingui-id: f/TG0V
+#: src/modules/spreadsheet-import/steps/components/MatchColumnsStep/components/ColumnGrid.tsx
+msgid "{brandName} fields"
+msgstr "Champs {brandName}"
+
+#. js-lingui-id: 260ctK
+#: src/pages/settings/community/SettingsCommunity.tsx
+msgid "{brandName} is built on Twenty, open-source software published under the AGPL license."
+msgstr "{brandName} repose sur Twenty, un logiciel libre publié sous licence AGPL."
+
+#. js-lingui-id: 0Mydl3
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Add {brandName} as a Streamable HTTP extension in Goose."
+msgstr "Ajoutez {brandName} comme extension HTTP Streamable dans Goose."
+
+#. js-lingui-id: ftfJWl
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Add the {brandName} MCP server as a remote context server in Zed."
+msgstr "Ajoutez le serveur MCP {brandName} comme serveur de contexte distant dans Zed."
+
+#. js-lingui-id: jZBBIh
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Add the {brandName} MCP server from Augment Code settings."
+msgstr "Ajoutez le serveur MCP {brandName} depuis les paramètres d'Augment Code."
+
+#. js-lingui-id: fZl01P
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Add the {brandName} MCP server from Raycast's MCP commands or settings."
+msgstr "Ajoutez le serveur MCP {brandName} depuis les commandes ou les paramètres MCP de Raycast."
+
+#. js-lingui-id: 29uIA/
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Add the {brandName} MCP server in Gemini CLI settings."
+msgstr "Ajoutez le serveur MCP {brandName} dans les paramètres de Gemini CLI."
+
+#. js-lingui-id: vSTdyR
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Add the {brandName} MCP server to your LibreChat configuration file."
+msgstr "Ajoutez le serveur MCP {brandName} à votre fichier de configuration LibreChat."
+
+#. js-lingui-id: So3cUB
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Add the {brandName} remote server with LM Studio's install link."
+msgstr "Ajoutez le serveur distant {brandName} avec le lien d'installation de LM Studio."
+
+#. js-lingui-id: +99joc
+#: src/modules/auth/sign-in-up/components/FooterNote.tsx
+msgid "By using {brandName}, you agree to the"
+msgstr "En utilisant {brandName}, vous acceptez les"
+
+#. js-lingui-id: N7HX4E
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Configure the {brandName} MCP server manually in Cascade."
+msgstr "Configurez manuellement le serveur MCP {brandName} dans Cascade."
+
+#. js-lingui-id: 4x09nq
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Configure the {brandName} MCP server manually in Cline."
+msgstr "Configurez manuellement le serveur MCP {brandName} dans Cline."
+
+#. js-lingui-id: elNrJ0
+#: src/modules/auth/sign-in-up/components/FooterNote.tsx
+msgid "Legal notice"
+msgstr "Mentions légales"
+
+#. js-lingui-id: FrTWXC
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Open Claude with the {brandName} connector name and MCP URL prefilled."
+msgstr "Ouvrez Claude avec le nom du connecteur {brandName} et l'URL MCP préremplis."
+
+#. js-lingui-id: +7hyR0
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Open Cursor's MCP installer with the {brandName} remote server config."
+msgstr "Ouvrez l'installeur MCP de Cursor avec la configuration du serveur distant {brandName}."
+
+#. js-lingui-id: u5lJAU
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Open Replit with the {brandName} remote server config."
+msgstr "Ouvrez Replit avec la configuration du serveur distant {brandName}."
+
+#. js-lingui-id: CXEEET
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Open the official ChatGPT integration for your workspace."
+msgstr "Ouvrez l'intégration ChatGPT officielle pour votre espace de travail."
+
+#. js-lingui-id: mgT8kb
+#: src/pages/not-found/NotFound.tsx
+msgid "Page Not Found | {brandName}"
+msgstr "Page non trouvée | {brandName}"
+
+#. js-lingui-id: joolK7
+#: src/pages/settings/community/SettingsCommunity.tsx
+msgid "Source code"
+msgstr "Code source"
+
+#. js-lingui-id: HIeKA1
+#: src/pages/settings/applications/utils/getStandardApplicationDescription.ts
+msgid "The base data model every {brandName} workspace runs on.\n\n#### What \"foundation\" means\n\nEvery {brandName} workspace starts with this set of objects. They define the shape of your CRM, including relationships, activity, and reporting. Everything else, including marketplace apps, AI agents, and custom objects, plugs into them.\n\n#### Included objects\n- **People & Companies**: contact and account records\n- **Opportunities**: your sales pipeline\n- **Notes & Tasks**: activity and follow-ups\n- **Workflows & Dashboards**: automation and reporting\n\nRemove this app and the rest of {brandName} has nothing to hang off.\n\n#### Build your own app\n\nExtend {brandName} with your own objects, fields, logic functions, or AI skills. Scaffold a new app in one command:\n\n```bash\nnpx create-twenty-app@latest my-twenty-app\n```\n\nThen inside the folder:\n\n```bash\ncd my-twenty-app\nyarn twenty dev\n```\n\nSee the [Getting Started guide](https://twenty.com/developers/extend/apps/getting-started) for the full walkthrough, and [Building Apps](https://twenty.com/developers/extend/apps/building) for the `defineApplication` / `defineEntity` APIs."
+msgstr "Le modèle de données de base sur lequel fonctionne chaque espace de travail {brandName}.\n\n#### Ce que signifie « socle »\n\nChaque espace de travail {brandName} commence avec cet ensemble d'objets. Ils définissent la structure de votre CRM, y compris les relations, l'activité et le reporting. Tout le reste, y compris les applications de la marketplace, les agents IA et les objets personnalisés, s'y connecte.\n\n#### Objets inclus\n- **Personnes & Entreprises**: enregistrements de contacts et de comptes\n- **Opportunités**: votre pipeline commercial\n- **Notes & Tâches**: activité et suivis\n- **Flux de travail & Tableaux de bord**: automatisation et reporting\n\nSupprimez cette application et le reste de {brandName} n'a plus rien sur quoi s'appuyer.\n\n#### Créez votre propre application\n\nÉtendez {brandName} avec vos propres objets, champs, fonctions logiques ou compétences en IA. Initialisez une nouvelle application en une commande :\n\n```bash\nnpx create-twenty-app@latest my-twenty-app\n```\n\nEnsuite, dans le dossier :\n\n```bash\ncd my-twenty-app\nyarn twenty dev\n```\n\nConsultez le [Guide de démarrage](https://twenty.com/developers/extend/apps/getting-started) pour le tutoriel complet, et [Création d'applications](https://twenty.com/developers/extend/apps/building) pour les API `defineApplication` / `defineEntity`."
+
+#. js-lingui-id: dDyO2A
+#: src/pages/settings/community/SettingsCommunity.tsx
+msgid "View the source code"
+msgstr "Voir le code source"
+
+#. js-lingui-id: gki87D
+#: src/pages/auth/SignInUp.tsx
+msgid "Welcome to {brandName}"
+msgstr "Bienvenue sur {brandName}"

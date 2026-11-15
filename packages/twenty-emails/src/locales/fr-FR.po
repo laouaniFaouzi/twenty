@@ -358,3 +358,33 @@ msgstr "Votre espace de travail a été supprimé"
 #: src/emails/warn-suspended-workspace.email.tsx
 msgid "Your workspace is paused"
 msgstr "Votre espace de travail est en pause"
+
+#. js-lingui-explicit-id
+#: src/emails/password-update-notify.email.tsx
+msgid "Connect to {brandName}"
+msgstr "Connectez-vous à {brandName}"
+
+#. js-lingui-explicit-id
+#: src/emails/send-invite-link.email.tsx
+msgid "Join your team on {brandName}"
+msgstr "Rejoignez votre équipe sur {brandName}"
+
+#. js-lingui-explicit-id
+#: src/components/Footer.tsx
+msgid "Source code"
+msgstr "Code source"
+
+#. js-lingui-explicit-id
+#: src/components/Footer.tsx
+msgid "View the source code"
+msgstr "Voir le code source"
+
+#. js-lingui-explicit-id
+#: src/components/Footer.tsx
+msgid "Visit the website"
+msgstr "Visiter le site web"
+
+#. js-lingui-explicit-id
+#: src/components/WhatIsTwenty.tsx
+msgid "What is {brandName}?"
+msgstr "Qu'est-ce que {brandName} ?"

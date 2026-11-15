@@ -22291,3 +22291,113 @@ msgstr "Your workspace will be disabled"
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
 msgid "Zed"
 msgstr "Zed"
+
+#. js-lingui-id: f/TG0V
+#: src/modules/spreadsheet-import/steps/components/MatchColumnsStep/components/ColumnGrid.tsx
+msgid "{brandName} fields"
+msgstr "{brandName} fields"
+
+#. js-lingui-id: 260ctK
+#: src/pages/settings/community/SettingsCommunity.tsx
+msgid "{brandName} is built on Twenty, open-source software published under the AGPL license."
+msgstr "{brandName} is built on Twenty, open-source software published under the AGPL license."
+
+#. js-lingui-id: 0Mydl3
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Add {brandName} as a Streamable HTTP extension in Goose."
+msgstr "Add {brandName} as a Streamable HTTP extension in Goose."
+
+#. js-lingui-id: ftfJWl
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Add the {brandName} MCP server as a remote context server in Zed."
+msgstr "Add the {brandName} MCP server as a remote context server in Zed."
+
+#. js-lingui-id: jZBBIh
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Add the {brandName} MCP server from Augment Code settings."
+msgstr "Add the {brandName} MCP server from Augment Code settings."
+
+#. js-lingui-id: fZl01P
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Add the {brandName} MCP server from Raycast's MCP commands or settings."
+msgstr "Add the {brandName} MCP server from Raycast's MCP commands or settings."
+
+#. js-lingui-id: 29uIA/
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Add the {brandName} MCP server in Gemini CLI settings."
+msgstr "Add the {brandName} MCP server in Gemini CLI settings."
+
+#. js-lingui-id: vSTdyR
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Add the {brandName} MCP server to your LibreChat configuration file."
+msgstr "Add the {brandName} MCP server to your LibreChat configuration file."
+
+#. js-lingui-id: So3cUB
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Add the {brandName} remote server with LM Studio's install link."
+msgstr "Add the {brandName} remote server with LM Studio's install link."
+
+#. js-lingui-id: +99joc
+#: src/modules/auth/sign-in-up/components/FooterNote.tsx
+msgid "By using {brandName}, you agree to the"
+msgstr "By using {brandName}, you agree to the"
+
+#. js-lingui-id: N7HX4E
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Configure the {brandName} MCP server manually in Cascade."
+msgstr "Configure the {brandName} MCP server manually in Cascade."
+
+#. js-lingui-id: 4x09nq
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Configure the {brandName} MCP server manually in Cline."
+msgstr "Configure the {brandName} MCP server manually in Cline."
+
+#. js-lingui-id: elNrJ0
+#: src/modules/auth/sign-in-up/components/FooterNote.tsx
+msgid "Legal notice"
+msgstr "Legal notice"
+
+#. js-lingui-id: FrTWXC
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Open Claude with the {brandName} connector name and MCP URL prefilled."
+msgstr "Open Claude with the {brandName} connector name and MCP URL prefilled."
+
+#. js-lingui-id: +7hyR0
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Open Cursor's MCP installer with the {brandName} remote server config."
+msgstr "Open Cursor's MCP installer with the {brandName} remote server config."
+
+#. js-lingui-id: u5lJAU
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Open Replit with the {brandName} remote server config."
+msgstr "Open Replit with the {brandName} remote server config."
+
+#. js-lingui-id: CXEEET
+#: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
+msgid "Open the official ChatGPT integration for your workspace."
+msgstr "Open the official ChatGPT integration for your workspace."
+
+#. js-lingui-id: mgT8kb
+#: src/pages/not-found/NotFound.tsx
+msgid "Page Not Found | {brandName}"
+msgstr "Page Not Found | {brandName}"
+
+#. js-lingui-id: joolK7
+#: src/pages/settings/community/SettingsCommunity.tsx
+msgid "Source code"
+msgstr "Source code"
+
+#. js-lingui-id: HIeKA1
+#: src/pages/settings/applications/utils/getStandardApplicationDescription.ts
+msgid "The base data model every {brandName} workspace runs on.\n\n#### What \"foundation\" means\n\nEvery {brandName} workspace starts with this set of objects. They define the shape of your CRM, including relationships, activity, and reporting. Everything else, including marketplace apps, AI agents, and custom objects, plugs into them.\n\n#### Included objects\n- **People & Companies**: contact and account records\n- **Opportunities**: your sales pipeline\n- **Notes & Tasks**: activity and follow-ups\n- **Workflows & Dashboards**: automation and reporting\n\nRemove this app and the rest of {brandName} has nothing to hang off.\n\n#### Build your own app\n\nExtend {brandName} with your own objects, fields, logic functions, or AI skills. Scaffold a new app in one command:\n\n```bash\nnpx create-twenty-app@latest my-twenty-app\n```\n\nThen inside the folder:\n\n```bash\ncd my-twenty-app\nyarn twenty dev\n```\n\nSee the [Getting Started guide](https://twenty.com/developers/extend/apps/getting-started) for the full walkthrough, and [Building Apps](https://twenty.com/developers/extend/apps/building) for the `defineApplication` / `defineEntity` APIs."
+msgstr "The base data model every {brandName} workspace runs on.\n\n#### What \"foundation\" means\n\nEvery {brandName} workspace starts with this set of objects. They define the shape of your CRM, including relationships, activity, and reporting. Everything else, including marketplace apps, AI agents, and custom objects, plugs into them.\n\n#### Included objects\n- **People & Companies**: contact and account records\n- **Opportunities**: your sales pipeline\n- **Notes & Tasks**: activity and follow-ups\n- **Workflows & Dashboards**: automation and reporting\n\nRemove this app and the rest of {brandName} has nothing to hang off.\n\n#### Build your own app\n\nExtend {brandName} with your own objects, fields, logic functions, or AI skills. Scaffold a new app in one command:\n\n```bash\nnpx create-twenty-app@latest my-twenty-app\n```\n\nThen inside the folder:\n\n```bash\ncd my-twenty-app\nyarn twenty dev\n```\n\nSee the [Getting Started guide](https://twenty.com/developers/extend/apps/getting-started) for the full walkthrough, and [Building Apps](https://twenty.com/developers/extend/apps/building) for the `defineApplication` / `defineEntity` APIs."
+
+#. js-lingui-id: dDyO2A
+#: src/pages/settings/community/SettingsCommunity.tsx
+msgid "View the source code"
+msgstr "View the source code"
+
+#. js-lingui-id: gki87D
+#: src/pages/auth/SignInUp.tsx
+msgid "Welcome to {brandName}"
+msgstr "Welcome to {brandName}"
