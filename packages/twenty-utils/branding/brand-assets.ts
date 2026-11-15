@@ -30,7 +30,11 @@ const readAsterisk = (): AsteriskDrawing => {
   };
 };
 
-export const buildIconSvg = (width: number, height: number = width): string => {
+export const buildIconSvg = (
+  width: number,
+  height: number = width,
+  cornerRadius = 0,
+): string => {
   const {
     viewBox: [x, y, drawingWidth, drawingHeight],
     paths,
@@ -43,10 +47,14 @@ export const buildIconSvg = (width: number, height: number = width): string => {
 
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
-    `<rect width="${width}" height="${height}" fill="${BRAND_COLORS.background}"/>`,
+    `<rect width="${width}" height="${height}"${cornerRadius > 0 ? ` rx="${cornerRadius}"` : ''} fill="${BRAND_COLORS.background}"/>`,
     `<g transform="translate(${offsetX} ${offsetY}) scale(${scale})" fill="${BRAND_COLORS.asterisk}">`,
     ...paths.map((path) => `<path d="${path}"/>`),
     '</g>',
     '</svg>',
   ].join('');
 };
+
+// Same size and corners as the Twenty mark that the sign-in loader and the
+// onboarding headers load by file name.
+export const buildSignInMarkSvg = (): string => buildIconSvg(96, 96, 11.3);

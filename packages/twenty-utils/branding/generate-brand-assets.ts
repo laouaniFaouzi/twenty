@@ -1,8 +1,8 @@
-import { mkdirSync, readdirSync, statSync } from 'fs';
+import { mkdirSync, readdirSync, statSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
 import sharp from 'sharp';
 
-import { buildIconSvg } from './brand-assets';
+import { buildIconSvg, buildSignInMarkSvg } from './brand-assets';
 
 const FRONT_PUBLIC_DIRECTORY = join(
   __dirname,
@@ -19,6 +19,13 @@ const EMAIL_LOGO_FILE = join(
   'email-logo.png',
 );
 const WORDMARK_FILE = join(__dirname, 'assets', 'hubfaze-wordmark.svg');
+// Kept under Twenty's file name so the components that load it stay untouched.
+const SIGN_IN_MARK_FILE = join(
+  FRONT_PUBLIC_DIRECTORY,
+  'images',
+  'integrations',
+  'twenty-logo.svg',
+);
 
 // Shown at 40 px in the emails, drawn at twice that for sharp screens.
 const EMAIL_LOGO_HEIGHT = 80;
@@ -61,7 +68,11 @@ const main = async () => {
     .png()
     .toFile(EMAIL_LOGO_FILE);
 
-  console.log(`${icons.length} icons regenerated, email logo written`);
+  writeFileSync(SIGN_IN_MARK_FILE, buildSignInMarkSvg());
+
+  console.log(
+    `${icons.length} icons regenerated, email logo and sign-in mark written`,
+  );
 };
 
 main().catch((error: unknown) => {
