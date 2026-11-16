@@ -39,7 +39,7 @@ Le script réécrit chaque icône à ses dimensions actuelles et produit le logo
 
 ## Après chaque récupération des versions de Twenty
 
-1. Fusionner la version de Twenty et résoudre les conflits. Garder `BRAND` partout où Twenty avait écrit son nom.
+1. Fusionner la version de Twenty et résoudre les conflits. Garder `BRAND` partout où Twenty avait écrit son nom. Pour les catalogues (`**/locales/*.po` et `**/locales/generated/*.ts`), prendre la version de Twenty : l'étape 4 y remet les messages de marque et recompile.
 2. Reconstruire le paquet partagé :
 
    ```bash
@@ -52,7 +52,7 @@ Le script réécrit chaque icône à ses dimensions actuelles et produit le logo
    npx nx run twenty-utils:check-branding
    ```
 
-   Chaque « Twenty » qu'il liste se traite selon la règle de tri ci-dessous. Il tourne aussi en CI (`.github/workflows/ci-branding.yaml`).
+   Chaque « Twenty » qu'il liste se traite selon la règle de tri ci-dessous. Le contrôle vérifie aussi que chaque message de marque est dans tous les catalogues compilés, en français dans `fr-FR`. Sinon, un build de production afficherait une clé brute, comme `gki87D`, à la place du texte. Il tourne aussi en CI (`.github/workflows/ci-branding.yaml`).
 4. Remettre les traductions de marque dans les catalogues et les recompiler :
 
    ```bash

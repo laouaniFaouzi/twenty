@@ -3,6 +3,14 @@ import { join, relative } from 'path';
 
 import { BRAND_CHECK_EXCEPTIONS } from './brand-check-exceptions';
 import {
+  BRAND_TRANSLATIONS,
+  type BrandCatalogPackage,
+} from './brand-translations';
+import {
+  type CompiledCatalog,
+  findBrandCatalogGaps,
+} from './find-brand-catalog-gaps';
+import {
   type BrandViolation,
   findMarkupViolations,
   findSourceViolations,
@@ -67,6 +75,46 @@ const collectViolations = (): BrandViolation[] => {
   ];
 };
 
+const COMPILED_CATALOG_DIRECTORIES: Record<BrandCatalogPackage, string> = {
+  'twenty-front': 'packages/twenty-front/src/locales/generated',
+  'twenty-emails': 'packages/twenty-emails/src/locales/generated',
+  'twenty-server':
+    'packages/twenty-server/src/engine/core-modules/i18n/locales/generated',
+};
+
+const loadCompiledCatalogs = (): CompiledCatalog[] =>
+  Object.entries(COMPILED_CATALOG_DIRECTORIES).flatMap(
+    ([packageName, directory]) =>
+      readdirSync(fromRoot(directory))
+        .filter((file) => file.endsWith('.ts'))
+        .map((file) => ({
+          packageName: packageName as BrandCatalogPackage,
+          locale: file.replace(/\.ts$/, ''),
+          // tsx runs this script, so the compiled catalogs load as modules.
+          messages: (
+            require(fromRoot(directory, file)) as {
+              messages: Record<string, unknown>;
+            }
+          ).messages,
+        })),
+  );
+
+const catalogGaps = findBrandCatalogGaps(
+  BRAND_TRANSLATIONS,
+  loadCompiledCatalogs(),
+);
+
+for (const gap of catalogGaps) {
+  console.log(gap);
+}
+
+if (catalogGaps.length > 0) {
+  console.log(
+    `\n${catalogGaps.length} brand translations missing from the compiled catalogs. Run npx nx run twenty-utils:brand-translations (see BRANDING.md).`,
+  );
+  process.exit(1);
+}
+
 const violations = collectViolations().filter(
   (violation) => !isExcepted(violation, BRAND_CHECK_EXCEPTIONS),
 );
@@ -82,4 +130,6 @@ if (violations.length > 0) {
   process.exit(1);
 }
 
-console.log('No "Twenty" shown to the team.');
+console.log(
+  'No "Twenty" shown to the team, and every brand translation is compiled.',
+);
